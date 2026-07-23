@@ -1,0 +1,7 @@
+{
+    "first": false,
+    "backuploc": "C:/Games/",
+    "timeperiod": "10d",
+    "logging": false,
+    "DB": "jobs.db"
+}
