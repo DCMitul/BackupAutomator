@@ -1,35 +1,94 @@
 # The libraries
 import json
 import os
+import time
 import sys
 from pathlib import Path
 import time
+from contextlib import redirect_stdout
 import sqlite3
+import subprocess
+from math import gcd
+from functools import reduce
+import fnmatch
+
 
 try:
     from InquirerPy import inquirer
-except:
+except ImportError:
     print("The library 'InquirerPy' is not present, install it using 'pip install InquirerPy' to proceed.")
     sys.exit()
 
 try:
     from tabulate import tabulate
-except:
+except ImportError:
     print("The library 'tabulate' is not present, install it using 'pip install tabulate' to proceed.")
     sys.exit()
 
 
+def delete_task_if_exists(name):
+    result = subprocess.run(
+        ["schtasks", "/query", "/tn", name],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode == 0:
+        subprocess.run(["schtasks", "/delete", "/tn", name, "/f"], check=True)
+
+
+def taskschedule():
+    name = hconfig('read', 'taskname')
+
+    if not hconfig('read', 'autorun'):
+        delete_task_if_exists(name)
+        return
+
+    conn = sqlite3.connect(hconfig('read', 'DB'))
+    cursor = conn.cursor()
+    cursor.execute("SELECT duration FROM jobs WHERE duration != 0")
+    dur = [row[0] for row in cursor.fetchall()]
+    conn.close()
+
+    if not dur:
+        delete_task_if_exists(name)
+        return
+
+    MAX_INTERVAL = 120
+    a = reduce(gcd, dur)
+    if a > MAX_INTERVAL:
+        for i in range(MAX_INTERVAL, 0, -1):
+            if a % i == 0:
+                a = i
+                break
+
+    python_exe = Path(sys.executable).with_name("pythonw.exe")
+    script = Path(hconfig("read", "script"))
+
+    delete_task_if_exists(name)
+    subprocess.run([
+        "schtasks", "/create", "/tn", name, "/sc", "minute",
+        "/mo", str(a), "/tr", f'"{python_exe}" "{script}"', "/f"
+    ], check=True)
+
+    # print(a)
+    
 def check_config():
-    if not os.path.exists("config.json"):
+    if not os.path.exists(CONFIGPATH):
         temp = {
             "first": True,
             "backuploc": "",
             "timeperiod": "",
             "logging": False,
-            "DB": "jobs.db"
+            "DB": str(BASEDIR / "jobs.db"),
+            "script": str(BASEDIR / "runn.py"),
+            "autorun": True,
+            "taskname": "BackupAutomator",
+            "zip": False,
+            "log": "",
+            "bkper": str(BASEDIR / "script.py")
         }
 
-        with open("config.json", "w") as f:
+        with open(CONFIGPATH, "w") as f:
             json.dump(temp, f, indent=4)
         
         return(True)
@@ -40,14 +99,14 @@ def check_config():
 # For reading from/updating the config. Don't ask me why 'h'config
 def hconfig(action,key,value=None):
     if check_config():
-        with open("config.json", "r") as f:
+        with open(CONFIGPATH, "r") as f:
             temp = json.load(f)
 
         if action == 'read':
             return temp.get(key)
         elif action == 'change':
             temp[key] = value
-            with open("config.json", "w") as f:
+            with open(CONFIGPATH, "w") as f:
                 json.dump(temp, f, indent=4)
         else:
             print("invalid input for action", action)
@@ -55,6 +114,7 @@ def hconfig(action,key,value=None):
 
 def check_base():
     conn = sqlite3.connect(hconfig("read","DB"))
+    conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
@@ -63,7 +123,17 @@ def check_base():
             destination TEXT NOT NULL,
             time TEXT NOT NULL,
             duration INTEGER NOT NULL,
-            exceptions TEXT
+            exceptions TEXT,
+            zip TEXT NOT NULL
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS schedule (
+            job_id INTEGER PRIMARY KEY,
+            last INTEGER,
+            next INTEGER,
+            FOREIGN KEY (job_id) REFERENCES jobs(job_id)
         )
     """)
 
@@ -71,46 +141,82 @@ def check_base():
     conn.close()
 
 
-def addtodb(source,destination,time,duration,exeption):
+def addtodb(source,destination,times,duration,exeption,zip):
     conn = sqlite3.connect(hconfig("read","DB"))
+    conn.execute("PRAGMA foreign_keys = ON")    
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO jobs (source, destination, time, duration, exceptions)
-        VALUES (?, ?, ?, ?, ?)
-    """, (source, destination, time, duration, exeption)
+        INSERT INTO jobs (source, destination, time, duration, exceptions, zip)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (source, destination, times, duration, exeption, zip)
+    )
+    lst = int(time.time() // 60 * 60)
+    nxt = lst + (duration * 60)
+    rowid = cursor.lastrowid
+    cursor.execute("""
+        INSERT INTO schedule (job_id, last, next)
+        VALUES (?, ?, ?)
+    """, (rowid, lst, nxt)
     )
 
-    cursor = cursor.lastrowid
+    
     
     conn.commit()
     conn.close()
+    hconfig('change','autorun',True)
+    if getfromdb('last') == None:
+        pass
+    else:
+        with open(os.devnull, "w") as f:
+            with redirect_stdout(f):
+                taskschedule()
+    return rowid
 
-    return cursor
 
-
-def editdb(row,source,destination,time,duration,exeption):
+def editdb(row,source,destination,timea,duration,exeption,zip):
     conn = sqlite3.connect(hconfig('read','DB'))
+    conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE jobs
-        SET source = ?, destination = ?, time = ?, duration = ?, exceptions = ?
+        SET source = ?, destination = ?, time = ?, duration = ?, exceptions = ?, zip = ?
         WHERE job_id = ?
     """, (
         source,
         destination,
-        time,
+        timea,
         duration,
         exeption,
+        zip,
         row
     ))
 
+    lst = int(time.time() // 60 * 60)
+    if duration == 0:
+        nxt = 0
+    else:
+        nxt = lst + (duration * 60)
+    cursor.execute("""
+        UPDATE schedule
+        SET next = ?
+        WHERE job_id = ?
+    """, (nxt, row)
+    )
+
+    if getfromdb('last') == None:
+        pass
+    else:
+        with open(os.devnull, "w") as f:
+            with redirect_stdout(f):
+                taskschedule()
     conn.commit()
     conn.close()
 
 
 def getfromdb(action,row=None):
+    
     conn = sqlite3.connect(hconfig("read","DB"))
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -151,6 +257,7 @@ def printjob(rows):
             "Source": rows["source"],
             "Destination": rows["destination"],
             "Time": rows["time"],
+            "Archive": rows["zip"],
             "Excluded": "\n".join(json.loads(rows["exceptions"]))
                          if json.loads(rows["exceptions"])
                          else "None"
@@ -166,6 +273,7 @@ def printjob(rows):
                 "Source": job["source"],
                 "Destination": job["destination"],
                 "Time": job["time"],
+                "Archive": job["zip"],
                 "Excluded": len(json.loads(job["exceptions"]))
             })
 
@@ -199,17 +307,19 @@ def checkdef(key,value):
 
 
 def convert_time(input):
-    if input.endswith('mm'):
-        return float(input[:-2]) * (2592000/60)
-    elif input.endswith('h'):
-        return float(input[:-1]) * 60
-    elif input.endswith('d'):
-        return float(input[:-1]) * (86400/60)
-    elif input.endswith('m'):
-        return float(input[:-1]) * 1
-    else:
+    try:
+        if input.endswith('mm'):
+            return int(float(input[:-2]) * (2592000/60))
+        elif input.endswith('h'):
+            return int(float(input[:-1]) * 60)
+        elif input.endswith('d'):
+            return int(float(input[:-1]) * (86400/60))
+        elif input.endswith('m'):
+            return int(float(input[:-1]) * 1)
+        else:
+            return False
+    except ValueError:
         return False
-
 
 def first():
     if hconfig("read","first"):
@@ -227,6 +337,8 @@ def firstdefault():
     deftimeperiod()
     print("Now lets confirm the logging options.")
     deflogging()
+    print("Now let's confirm about archiving.")
+    defzip()
     print("That is all the defaults set! If you ever want to change these, pick the 'edit defaults' option from the main menu.")
 
 
@@ -278,7 +390,14 @@ def deflogging():
     while True:
         templ = inquircnfrm("Do you want logging enabaled?",True)
         if templ:
-            hconfig("change",'logging',True)
+            temp2 = inquirinp("Where do you want the logs to be kept? (Must be a folder)",hconfig('read','log'))
+            if Path(temp2).exists() and not temp2 == '' and Path(temp2).is_dir():
+                hconfig("change",'logging',True)
+                hconfig('change','log',temp2)
+            else:
+                print("There was an error, please try again.")
+                continue
+
             if not checkdef('logging',True):
                 continue
             else:
@@ -290,7 +409,25 @@ def deflogging():
             else:
                 break
 
-    
+
+def defzip():
+    while True:
+        temp = inquircnfrm("Do you want your backups archived? (Only works for directories, and the archives are saved as .zip)",False)
+        if temp:
+            hconfig("change","zip",True)
+            if not checkdef('zip',True):
+                continue
+            else:
+                break
+        else:
+            hconfig("change","zip",False)
+            if not checkdef('zip',False):
+                continue
+            else:
+                break
+
+
+# The extra 'm' is for main as in main menu xD
 def mmenu():
     action = inquirer.select(
         message="Main Menu",
@@ -303,7 +440,15 @@ def mmenu():
     
     if action == "exit":
         print("Exiting now...")
-        time.sleep(3)
+        time.sleep(1)
+        if getfromdb('last') == None:
+            pass
+        else:
+            taskschedule()
+            # with open(os.devnull, "w") as f:
+            #     with redirect_stdout(f):
+            #         taskschedule()
+
         sys.exit()
     elif action == "sett":
         settings()
@@ -319,12 +464,23 @@ def settings():
         message="Settings",
         choices=[
             {"name": "Edit defaults", "value": "defa"},
+            {"name": "Stop/Start Backup Script Autorun", "value":"stobak"},
             {"name": "Back", "value": "bck"}
         ]
     ).execute()
     
     if sett == "bck":
         mmenu()
+    elif sett == 'stobak':
+        if hconfig('read','autorun'):
+            hconfig('change','autorun',False)
+            taskschedule()
+            print("Autorun has been stopped. Note: It will be started again when a new job is added(not edited).")
+        else:
+            hconfig('change','autorun',True)
+            taskschedule()
+            print("Autorun has been started.")
+        settings()
     elif sett == "defa":
         defa = inquirer.select(
             message="Which default do you want to change?",
@@ -332,6 +488,7 @@ def settings():
                 {"name": "Backup Path", "value": "backuploc"},
                 {"name": "Time Period", "value": "time"},
                 {"name": "Logging", "value": "logg"},
+                {"name": "Archive", "value": "zip"},
                 {"name": "Back", "value": "bck"}
             ]
         ).execute()
@@ -344,6 +501,8 @@ def settings():
             deftimeperiod()
         elif defa == "logg":
             deflogging()
+        elif defa == "zip":
+            defzip()
 
         settings()
 
@@ -351,7 +510,7 @@ def settings():
 def addjb():
     while True:
         flpth = inquirinp("First, enter the path of the file/folder you want to keep backed up","")
-        if Path(flpth).exists():
+        if Path(flpth).exists() and not flpth == '':
             print("The path you provided is", flpth)
             if inquircnfrm("Is the given path correct?",True):
                 print("The path has been recorded.")
@@ -365,13 +524,13 @@ def addjb():
 
     while True:
         bkpth = inquirinp("Now, enter the location of the place you want to keep the backup in",hconfig("read","backuploc"))
-        if Path(bkpth).exists():
+        if Path(bkpth).exists() and not Path(bkpth).resolve().is_relative_to(Path(flpth).resolve()):
             print("The path you provided is", bkpth)
             if inquircnfrm("Is the given path correct?",True):
                     print("The path has been recorded.")
                     break
             else:
-                print("Please try again")
+                print("The path you provided has some problems. Please try again.")
                 continue
         else:    
             print("The given path does not exist, please try again.")
@@ -383,7 +542,7 @@ def addjb():
             print("The time period you entered is invalid. Please try again")
             continue
         else:
-            print("The time period you entered is", tim, "or", convert_time(tim), "minutes.")
+            print("The time period you entered is", tim, "or", convert_time(tim), "minutes.(Decimal values are removed if the original time was in minutes)")
             if inquircnfrm("Is the gievn time period correct?",True):
                 print("The time period has been recorded")
                 break
@@ -391,33 +550,60 @@ def addjb():
             else:
                 print("Please try again")
                 continue
+    if Path(flpth).is_dir():
+        if inquircnfrm("Do you want to archive the backups?",hconfig('read','zip')):
+            zip = 'Yes'
+            print("Archiving for this backup is now on.")
+        else:
+            zip = 'No'
+            print("Archiving for this backup is now off.")
 
-    if inquircnfrm("Do you have any files/folders within the given folder that you want to exclude from the backup?(Pick no if the thing you want to backup is a file)",False):
-        exceptions = []
-        print("Please enter the path(s) of the exception(s). Type 'done' once you're finished")
-        while True:
-            temp = inquirinp('>>',"")
-            if temp.lower() == 'done':
-                break
-            elif Path(temp).exists():
-                if temp in exceptions:
-                    print("The item given is already once provided.")
+
+        if inquircnfrm("Do you have any files/folders within the given folder that you want to exclude from the backup?",False):
+            exceptions = []
+            print("Please enter the path(s) of the exception(s). Don't use the full path, only enter the path from after the path of the backup obect(Eg - path of backup/source object - 'abc/xyz', then the path of the exception will be 'pqr' or 'mno/abc', not 'abc/xyz/pqr' or 'abc/xyz/mno/abc'). You may use wild card charectors, but they must follow standard shell wildcard patterns and must be without path slashes.")
+            print("Type 'done' once you're finished")
+            while True:
+                temp = inquirinp('>>',"")
+                if temp == "":
+                    print("Please enter a path/pattern or type 'done'.")
+                    continue
+                if temp.lower() == 'done':
+                    break
+                
+                elif '*' in temp:
+                    if Path(temp).name == temp:
+                        if temp in exceptions:
+                            print("The item given is already once provided.")
+                        else:
+                            exceptions.append(temp)
+                    else:
+                        print("The path you entered does not exist or has some issues, try again.")
+                
+                elif (Path(flpth) / temp).exists() and not Path(temp).is_absolute():
+                    if temp in exceptions:
+                        print("The item given is already once provided.")
+                    else:
+                        exceptions.append(temp)
+                
                 else:
-                    exceptions.append(temp)
-            else:
-                print("The path you entered does not exist, try again.")
+                    print("The path you entered does not exist or has some issues, try again.")
 
-            continue
+                continue
+            
+            print("The exeptions have been recorded.")
+        else:
+            exceptions = []
+            pass
         
-        print("The exeptions have been recorded.")
-    else:
-        exceptions = []
-        pass
-    
-    exceptions = json.dumps(exceptions)
+        exceptions = json.dumps(exceptions)
+
+    elif Path(flpth).is_file():
+        zip = 'No'
+        exceptions = json.dumps([])
 
     print("That was all! Adding the job to the database :)")
-    temp = addtodb(flpth,bkpth,tim,convert_time(tim),exceptions)
+    temp = addtodb(flpth,bkpth,tim,convert_time(tim),exceptions,zip)
     print("The job was added with the jobid as", temp, ". Also printing the job row...")
     printjob(getfromdb("one",temp))
 
@@ -425,7 +611,7 @@ def addjb():
 def editjb(row):
     while True:
         flpth = inquirinp("First, enter the path of the file/folder you want to keep backed up",row['source'])
-        if Path(flpth).exists():
+        if Path(flpth).exists() and not flpth == '':
             print("The path you provided is", flpth)
             if inquircnfrm("Is the given path correct?",True):
                 print("The path has been recorded.")
@@ -439,7 +625,7 @@ def editjb(row):
 
     while True:
         bkpth = inquirinp("Now, enter the location of the place you want to keep the backup in",row['destination'])
-        if Path(bkpth).exists():
+        if Path(bkpth).exists() and not Path(bkpth).resolve().is_relative_to(Path(flpth).resolve()):
             print("The path you provided is", bkpth)
             if inquircnfrm("Is the given path correct?",True):
                     print("The path has been recorded.")
@@ -466,34 +652,62 @@ def editjb(row):
                 print("Please try again")
                 continue
 
-    if inquircnfrm("Do you have any files/folders within the given folder that you want to exclude from the backup?(Pick no if the thing you want to backup is a file)",False):
-        exceptions = []
-        print("Please enter the path(s) of the exception(s). Type 'done' once you're finished")
-        while True:
-            temp = inquirinp('>>',"")
-            if temp.lower() == 'done':
-                break
-            elif Path(temp).exists():
-                if temp in exceptions:
-                    print("The item given is already once provided.")
-                else:
-                    exceptions.append(temp)
-            else:
-                print("The path you entered does not exist, try again.")
+    if Path(flpth).is_dir():
+        if inquircnfrm("Do you want to archive the backups?",row['zip'] == 'Yes'):
+            zip = 'Yes'
+            print("Archiving for this backup is now on.")
+        else:
+            zip = 'No'
+            print("Archiving for this backup is now off.")
 
-            continue
+
+        if inquircnfrm("Do you have any files/folders within the given folder that you want to exclude from the backup?",False):
+            exceptions = []
+            print("Please enter the path(s) of the exception(s). Don't use the full path, only enter the path from after the path of the backup obect(Eg - path of backup/source object - 'abc/xyz', then the path of the exception will be 'pqr' or 'mno/abc', not 'abc/xyz/pqr' or 'abc/xyz/mno/abc'). You may use wild card charectors, but they must follow standard shell wildcard patterns and must be without path slashes.")
+            print("Type 'done' once you're finished")
+            while True:
+                temp = inquirinp('>>',"")
+                if temp == "":
+                    print("Please enter a path/pattern or type 'done'.")
+                    continue
+                if temp.lower() == 'done':
+                    break
+                
+                elif '*' in temp:
+                    if Path(temp).name == temp:
+                        if temp in exceptions:
+                            print("The item given is already once provided.")
+                        else:
+                            exceptions.append(temp)
+                    else:
+                        print("The path you entered does not exist or has some issues, try again.")
+                
+                elif (Path(flpth) / temp).exists() and not Path(temp).is_absolute():
+                    if temp in exceptions:
+                        print("The item given is already once provided.")
+                    else:
+                        exceptions.append(temp)
+                
+                else:
+                    print("The path you entered does not exist or has some issues, try again.")
+
+                continue
+            
+            print("The exeptions have been recorded.")
+        else:
+            exceptions = []
+            pass
         
-        print("The exeptions have been recorded.")
-    else:
-        exceptions = []
-        pass
-    
-    exceptions = json.dumps(exceptions)
+        exceptions = json.dumps(exceptions)
+
+    elif Path(flpth).is_file():
+        zip = 'No'
+        exceptions = json.dumps([])
 
     print("That was all! Adding the job to the database :)")
-    editdb(row,flpth,bkpth,tim,convert_time(tim),exceptions)
+    editdb(row['job_id'],flpth,bkpth,tim,convert_time(tim),exceptions,zip)
     print("The job was succesfully updated!")
-    printjob(getfromdb("one",row))
+    printjob(getfromdb("one",row['job_id']))
 
 
 def viewjb():
@@ -561,7 +775,7 @@ def viewjb():
             row = inquirinp("Please enter the job id of the job you want to delete","")
             printjob(getfromdb('one',row))
             if inquirinp('Please confirm job deletion by typing YES(case sensitive)','') == 'YES':
-                editdb(row,"DELETED","DELETED","DELETED",0,json.dumps([]))
+                editdb(row,"DELETED","DELETED","DELETED",0,json.dumps([]),'DELETED')
                 print("The job has been deleted. Any other job ids have not been affected.")
             else:
                 print("Canceled")
@@ -573,9 +787,12 @@ def viewjb():
             print("The database is empty")
             mmenu()
         else:
-            if inquirinp('Please confirm the deletion by typing DELETE ALL JOBS(case sensitive)',''):
+            if inquirinp('Please confirm the deletion by typing DELETE ALL JOBS(case sensitive)','') == 'DELETE ALL JOBS':
+                hconfig('change','autorun',False)
+                taskschedule()
                 Path(hconfig("read", "DB")).unlink()
                 check_base()
+                hconfig('change','autorun',False)
                 print("All the jobs were deleted.")
             else:
                 print("Canceled")
@@ -584,6 +801,8 @@ def viewjb():
 
 
 
+BASEDIR = Path(__file__).resolve().parent
+CONFIGPATH = BASEDIR / "config.json"
 
 # The starting greetings
 print("""
@@ -603,6 +822,8 @@ check_config()
 check_base()
 first()
 mmenu()
+
+
 
 
 
