@@ -1,0 +1,105 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.topbar {
+    position: relative;
+    top: 0%;
+    width: 100%;
+    height: 8vh;
+    background-color: #5170ff;
+    margin: 0;
+
+}
+
+.topbar .pure-u-1-3 .name {
+    position: absolute;
+    top:0%;
+    width: 33.33vw;
+    margin: 0;
+    font-size:5vh;
+    color: white;
+    font-family:cursive;
+    text-align: center;
+}
+
+
+.topbar .pure-u-1-6 .image {
+    height: 6vh;
+    margin-top: 1vh;
+}
+
+.topbar .pure-u-1-24 .sett {
+    height:6vh;
+    margin-top: 1vh;
+}
+
+.subbar {
+    position:relative;
+    margin: 0;
+    width: 100%;
+    height: 3vh;
+    background-color: #a6a6a6;
+}
+
+.subbar .jobid {
+    margin:0.5vh;
+    font-size: 2vh;
+    color: white;
+}
+
+.subbar .total {
+    text-align: end;
+    margin: 0.5vh;
+    font-size: 2vh;
+    color: white;
+}
+
+.jobs {
+    position:relative;
+    width: 100%;
+    margin: 0;
+    height: 86vh;
+    background-color: white;
+}
+
+.jobs .nojob {
+    position: absolute;
+    font-size: 5vh;
+    color: #d9d9d9;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+}
+
+.bottombar {
+    position: relative;
+    width: 100%;
+    height: 3vh;
+    background-color: #d9d9d9;
+    margin: 0;
+    overflow: hidden;
+}
+
+.bottombar .ver{
+    font-size: 2vh;
+    margin: 0.5vh;
+    color: black;
+}
+
+.bottombar .store{
+    text-align: center;
+    font-size: 2vh;
+    margin: 0.5vh;
+    color: black;
+}
+
+.bottombar .cred{
+    text-align: end;
+    font-size: 2vh;
+    margin: 0.5vh;
+    color: black;
+}

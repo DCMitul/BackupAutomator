@@ -85,7 +85,8 @@ def check_config():
             "taskname": "BackupAutomator",
             "zip": False,
             "log": "",
-            "bkper": str(BASEDIR / "script.py")
+            "bkper": str(BASEDIR / "script.py"),
+            "version": "1.0"
         }
 
         with open(CONFIGPATH, "w") as f:
@@ -464,7 +465,7 @@ def settings():
         message="Settings",
         choices=[
             {"name": "Edit defaults", "value": "defa"},
-            {"name": "Stop/Start Backup Script Autorun", "value":"stobak"},
+            {"name": "Stop/Start Backup Script Autorun", "value":"stobak"},   #Reading this function after a few days, I have no clue why I gave it the value 'stobak'
             {"name": "Back", "value": "bck"}
         ]
     ).execute()
@@ -822,7 +823,6 @@ check_config()
 check_base()
 first()
 mmenu()
-
 
 
 
