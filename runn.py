@@ -34,3 +34,4 @@ with open(logfile, "w", encoding="utf-8") as log:
 
     log.write(f"\nBackup script exited with code: {result.returncode}\n")
     
+ 

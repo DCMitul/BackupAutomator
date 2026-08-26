@@ -34,6 +34,7 @@ body {
 .topbar .pure-u-1-24 .sett {
     height:6vh;
     margin-top: 1vh;
+    align-self: end;
 }
 
 .subbar {
@@ -103,3 +104,4 @@ body {
     margin: 0.5vh;
     color: black;
 }
+
