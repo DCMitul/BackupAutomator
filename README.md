@@ -1,13 +1,11 @@
-# ···················································································
-# :.................................................................................:
-# :..╦.╦┌─┐┬..┌─┐┌─┐┌┬┐┌─┐..┌┬┐┌─┐..╔╗.┌─┐┌─┐┬┌─┬.┬┌─┐╔═╗┬.┬┌┬┐┌─┐┌┬┐┌─┐┌┬┐┌─┐┬─┐┬..:
-# :..║║║├┤.│..│..│.││││├┤....│.│.│..╠╩╗├─┤│..├┴┐│.│├─┘╠═╣│.│.│.│.││││├─┤.│.│.│├┬┘│..:
-# :..╚╩╝└─┘┴─┘└─┘└─┘┴.┴└─┘...┴.└─┘..╚═╝┴.┴└─┘┴.┴└─┘┴..╩.╩└─┘.┴.└─┘┴.┴┴.┴.┴.└─┘┴└─o..:
-# :.................................................................................:
-# ···················································································
-                    Has both CLI and GUI!
 
-Open-source lightweight tool to help you backup your most important files in a easy-to-use way.
+![image](/gui/assets/Logo.png)
+
+
+<p align="center">Has both a CLI and a GUI!</p>
+
+
+An open-source lightweight tool to help you backup your most important files in a easy-to-use way.
 
 ## About
 BackupAutomator started as a simple python-only project that would also improve my quality of life. I always thought other backup apps were either way too heavy or overkill, so I thought why not make a simple one of my own? And that's how this came into existance.
