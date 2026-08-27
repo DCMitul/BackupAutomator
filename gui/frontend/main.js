@@ -339,3 +339,149 @@ fetch("/api/initial-data")
         );
 
     });
+
+const settingsButton =
+    document.querySelector("#settings-button");
+
+const settingsOverlay =
+    document.querySelector("#settings-overlay");
+
+
+settingsButton.addEventListener("click", () => {
+
+    settingsOverlay.style.display = "flex";
+
+    fetch("/api/settings")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            return response.json();
+        })
+        .then(settings => {
+
+            document.querySelector("#setting-backuploc").value =
+                settings.backuploc;
+
+            const timeMatch = settings.time.match(/^(\d+)(mm|m|h|d)$/);
+                    
+            if (timeMatch) {
+                document.querySelector("#setting-time").value =
+                    timeMatch[1];
+            
+                document.querySelector("#setting-time-unit").value =
+                    timeMatch[2];
+            }
+
+            document.querySelector("#setting-zip").checked =
+                settings.zip;
+
+            document.querySelector("#setting-logging").checked =
+                settings.logging;
+        })
+        .catch(error => {
+            console.error("Failed to get settings:", error);
+        });
+});
+
+document.querySelector("#settings-save").addEventListener("click", () => {
+
+    const settings = {
+        backuploc:
+            document.querySelector("#setting-backuploc").value,
+    
+        timeperiod:
+            document.querySelector("#setting-time").value +
+            document.querySelector("#setting-time-unit").value,
+    
+        zip:
+            document.querySelector("#setting-zip").checked,
+    
+        logging:
+            document.querySelector("#setting-logging").checked
+    };
+
+
+    fetch("/api/settings", {
+        method: "PUT",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(settings)
+    })
+        .then(response => {
+
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            return response.json();
+        })
+        .then(result => {
+
+            console.log("Settings saved:", result);
+
+            settingsOverlay.style.display = "none";
+        })
+        .catch(error => {
+
+            console.error("Failed to save settings:", error);
+        });
+});
+
+document.querySelector("#delete-all").addEventListener("click", () => {
+
+    const confirmed = confirm(
+        "Are you sure you want to delete all backup jobs?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    fetch("/api/jobs", {
+        method: "DELETE"
+    })
+        .then(response => {
+
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            return response.json();
+        })
+        .then(result => {
+
+            console.log("All jobs deleted:", result);
+
+            // Remove all cards
+            document.querySelector(".jobs").innerHTML = "";
+
+            // Update total
+            document.querySelector(".total").textContent =
+                "Total Jobs: 0";
+
+        })
+        .catch(error => {
+
+            console.error(
+                "Failed to delete all jobs:",
+                error
+            );
+
+        });
+
+});
+
+
+settingsOverlay.addEventListener("click", event => {
+
+    if (event.target === settingsOverlay) {
+        settingsOverlay.style.display = "none";
+    }
+
+});

@@ -1,7 +1,10 @@
 from flask import Flask
 from flask import send_from_directory
 from flask import jsonify
+from flask import request
 from pathlib import Path
+from getdata import getdef,changedef,hconfig
+import sqlite3
 
 
 
@@ -43,6 +46,43 @@ def initial_data():
         from getdata import getinitialdata
 
         return jsonify(getinitialdata())
+
+@app.route("/api/settings", methods=["GET"])
+def settings_get():
+    return jsonify(getdef())
+
+@app.route("/api/settings", methods=["PUT"])
+def settings_put():
+
+    settings = request.get_json()
+
+    if not isinstance(settings, dict):
+        return jsonify({"error": "Invalid settings data"}), 400
+
+    changedef(settings)
+
+    return jsonify({
+        "success": True
+    })
+
+@app.route("/api/jobs", methods=["DELETE"])
+def delete_all_jobs():
+
+    conn = sqlite3.connect(
+        hconfig("read", "DB")
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM schedule")
+    cursor.execute("DELETE FROM jobs")
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "success": True
+    })
 
 
 if __name__ == "__main__":

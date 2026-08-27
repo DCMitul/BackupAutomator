@@ -56,6 +56,21 @@ def getfromdb(a,row=None):
         return dict(cursor)
 
 
+def getdef():
+    return {
+        "backuploc": hconfig("read", "backuploc"),
+        "time": hconfig("read", "timeperiod"),
+        "zip": hconfig("read", "zip"),
+        "logging": hconfig("read", "logging"),
+        "autorun": hconfig("read", "autorun")
+    }
+
+
+def changedef(new):
+    for key, value in new.items():
+        hconfig("change", key, value)
+
+
 def getinitialdata():
     return {
         "version": hconfig('read','version'),

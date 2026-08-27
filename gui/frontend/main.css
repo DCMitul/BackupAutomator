@@ -279,6 +279,217 @@ body {
 
 /* AI CODE ENDS HERE */
 
+.settings-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    background-color: rgba(255, 255, 255, 0.35);
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    z-index: 1000;
+}
+
+.settings-panel {
+    width: 65vw;
+    max-width: 950px;
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    padding: 4vh 4vw;
+
+    background-color: white;
+
+    border: 0.5vh solid #c72cff;
+    border-radius: 4vh;
+
+    box-sizing: border-box;
+}
+
+.settings-panel h1 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 8vh;
+}
+
+
+/* SEPARATOR */
+
+.settings-separator {
+    width: 90%;
+    height: 0.7vh;
+
+    margin: 3vh auto 6vh;
+
+    background-color: #b3b3b3;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+
+    gap: 2vw;
+
+    margin-bottom: 5vh;
+
+    min-width: 0;
+}
+
+.setting-icon {
+    flex-shrink: 0;
+
+    width: 9vh;
+    height: 9vh;
+
+    padding: 1vh;
+
+    box-sizing: border-box;
+
+    border-radius: 1.5vh;
+
+    background-color: #b8f6f8;
+
+    object-fit: contain;
+}
+
+
+.setting-content {
+    min-width: 0;
+
+    flex: 1;
+}
+
+
+.setting-content h2 {
+    margin: 0 0 1vh;
+
+    font-size: 4vh;
+}
+
+.setting-control {
+    display: flex;
+
+    gap: 1vw;
+
+    width: 100%;
+}
+
+.setting-control input,
+.setting-control select {
+    height: 5vh;
+
+    box-sizing: border-box;
+
+    font-size: 2vh;
+}
+
+.setting-control input {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-action {
+    width: 100%;
+
+    border: none;
+    border-radius: 3vh;
+
+    padding: 2vh;
+
+    margin-top: 2vh;
+
+    font-size: 3vh;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.autorun {
+    background-color: #ffca05;
+    color: white;
+}
+
+.delete-all {
+    background-color: #ff1030;
+    color: white;
+}
+
+.settings-button {
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+}
+
+.switch {
+    position: relative;
+
+    display: inline-block;
+
+    width: 8vh;
+    height: 4vh;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+
+.slider {
+    position: absolute;
+
+    inset: 0;
+
+    cursor: pointer;
+
+    background-color: #aaa;
+
+    border-radius: 4vh;
+
+    transition: 0.2s;
+}
+
+.slider::before {
+    content: "";
+
+    position: absolute;
+
+    width: 3vh;
+    height: 3vh;
+
+    left: 0.5vh;
+    bottom: 0.5vh;
+
+    background-color: white;
+
+    border-radius: 50%;
+
+    transition: 0.2s;
+}
+
+.switch input:checked + .slider {
+    background-color: #5170ff;
+}
+
+.switch input:checked + .slider::before {
+    transform: translateX(4vh);
+}
+
+
 .bottombar {
     position: relative;
     width: 100%;

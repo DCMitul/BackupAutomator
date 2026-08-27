@@ -21,9 +21,11 @@
             <div class="pure-u-1-6">
                 <img class="pure-img image" src="/gui/assets/Create button.png" alt="Create Button">
             </div>
-            <div class="pure-u-1-24">
-                <img class="pure-img sett" src="/gui/assets/settings.png" alt="Settings icon">
-            </div>
+                <div class="pure-u-1-24">
+                    <button class="settings-button" id="settings-button" type="button">
+                        <img class="pure-img sett" src="/gui/assets/settings.png" alt="Settings">
+                    </button>
+                </div>
         </div>
     </div>
     <div class="pure-g subbar">
@@ -60,8 +62,143 @@
         </div>
     </div>
 
+    <div class="settings-overlay" id="settings-overlay">
+
+        <div class="settings-panel">
+
+            <h1>Settings</h1>
+
+            <div class="settings-separator"></div>
+
+            <div class="setting-item">
+
+                <img src="/gui/assets/Folder Icon.svg" alt="" class="setting-icon">
+
+                <div class="setting-content">
+
+                    <h2>Default Backup Folder</h2>
+
+                    <div class="setting-control">
+                        <input
+                            type="text"
+                            id="setting-backuploc"
+                            placeholder="Default backup folder"
+                        >
+
+                        <button type="button">
+                            Browse
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="setting-item">
+
+                <img
+                    src="/gui/assets/Clock icon.svg"
+                    alt=""
+                    class="setting-icon"
+                >
+
+                <div class="setting-content">
+
+                    <h2>Default Time Period</h2>
+
+                    <div class="setting-control">
+
+                        <input
+                            type="number"
+                            id="setting-time"
+                            min="1"
+                            placeholder="Time"
+                        >
+
+                        <select id="setting-time-unit">
+                            <option value="m">Minutes</option>
+                            <option value="h">Hours</option>
+                            <option value="d">Days</option>
+                            <option value="mm">Months</option>
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="setting-item">
+
+                <img
+                    src="/gui/assets/Archive icon.svg"
+                    alt=""
+                    class="setting-icon"
+                >
+
+                <div class="setting-content">
+
+                    <h2>Archiving by default?</h2>
+
+                    <label class="switch">
+                        <input type="checkbox" id="setting-zip">
+                        <span class="slider"></span>
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="setting-item">
+
+                <img
+                    src="/gui/assets/Logging icon.svg"
+                    alt=""
+                    class="setting-icon"
+                >
+
+                <div class="setting-content">
+
+                    <h2>Logging?</h2>
+
+                    <label class="switch">
+                        <input type="checkbox" id="setting-logging">
+                        <span class="slider"></span>
+                    </label>
+
+                </div>
+
+            </div>
+            
+            <button
+                type="button"
+                id="settings-save"
+                class="settings-action save-settings"
+            >
+                Save
+            </button>
+
+
+            <button
+                type="button"
+                class="settings-action autorun"
+            >
+                Start/Stop backup script autorun
+            </button>
+
+
+            <button
+                type="button"
+                id="delete-all"
+                class="settings-action delete-all"
+            >
+                DELETE ALL JOBS
+            </button>
+
+        </div>
+
+    </div>
+
     <script src="/gui/frontend/main.js"></script>
 </body>
 </html>
-
-
