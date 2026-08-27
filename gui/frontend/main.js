@@ -20,276 +20,322 @@ fetch("/api/initial-data")
 
         document.querySelector(".store").textContent =
             data.storage + "% of backup drive full";
-            
+
         document.querySelector(".total").textContent =
             "Total Jobs: " + data.jobs.length;
 
 
         // =========================================================
-        // JOBS
+        // DISPLAY JOBS
         // =========================================================
 
-        const jobs = document.querySelector(".jobs");
+        function renderJobs(jobList) {
 
-        // Remove the placeholder content
-        jobs.innerHTML = "";
+            const jobs = document.querySelector(".jobs");
+
+            // Clear current jobs
+            jobs.innerHTML = "";
 
 
-        // ---------------------------------------------------------
-        // NO JOBS
-        // ---------------------------------------------------------
+            // No jobs to display
+            if (jobList.length === 0) {
+                return;
+            }
 
-        if (data.jobs.length === 0) {
 
-            const noJobs = document.createElement("p");
+            // Create a card for every job
+            jobList.forEach(job => {
 
-            noJobs.className = "nojob";
-            noJobs.textContent = "No Backup Jobs Found.";
+                // -------------------------------------------------
+                // CARD
+                // -------------------------------------------------
 
-            jobs.appendChild(noJobs);
+                const card = document.createElement("div");
+                card.className = "job-card";
 
-            return;
+
+                // -------------------------------------------------
+                // HEADER
+                // -------------------------------------------------
+
+                const header = document.createElement("div");
+                header.className = "job-card-header";
+
+
+                // Job ID
+                const jobId = document.createElement("p");
+                jobId.className = "job-id";
+                jobId.textContent = "Job Id: " + job.job_id;
+
+
+                // Buttons container
+                const actions = document.createElement("div");
+                actions.className = "job-actions";
+
+
+                // -------------------------------------------------
+                // EDIT BUTTON
+                // -------------------------------------------------
+
+                const editButton = document.createElement("button");
+
+                editButton.className = "job-edit";
+                editButton.type = "button";
+
+
+                const editIcon = document.createElement("img");
+
+                editIcon.src = "/gui/assets/Edit icon.svg";
+                editIcon.alt = "Edit";
+
+
+                editButton.appendChild(editIcon);
+
+
+                // -------------------------------------------------
+                // DELETE BUTTON
+                // -------------------------------------------------
+
+                const deleteButton = document.createElement("button");
+
+                deleteButton.className = "job-delete";
+                deleteButton.type = "button";
+
+
+                const deleteIcon = document.createElement("img");
+
+                deleteIcon.src = "/gui/assets/Delete icon.svg";
+                deleteIcon.alt = "Delete";
+
+
+                deleteButton.appendChild(deleteIcon);
+
+
+                // Add buttons to actions
+                actions.appendChild(editButton);
+                actions.appendChild(deleteButton);
+
+
+                // Add ID and actions to header
+                header.appendChild(jobId);
+                header.appendChild(actions);
+
+
+                // -------------------------------------------------
+                // SEPARATOR
+                // -------------------------------------------------
+
+                const separator = document.createElement("div");
+
+                separator.className = "job-separator";
+
+
+                // -------------------------------------------------
+                // JOB INFORMATION
+                // -------------------------------------------------
+
+                const info = document.createElement("div");
+
+                info.className = "job-info";
+
+
+                // Helper function for information items
+                function addInfo(title, value, iconPath) {
+
+                    const item = document.createElement("div");
+
+                    item.className = "job-info-item";
+
+
+                    // Icon
+                    const iconBox = document.createElement("div");
+
+                    iconBox.className = "job-icon";
+
+
+                    const icon = document.createElement("img");
+
+                    icon.className = "job-icon-image";
+                    icon.src = iconPath;
+                    icon.alt = "";
+
+
+                    iconBox.appendChild(icon);
+
+
+                    // Text
+                    const text = document.createElement("div");
+
+                    text.className = "job-info-text";
+
+
+                    const titleElement = document.createElement("p");
+
+                    titleElement.className = "job-info-title";
+                    titleElement.textContent = title;
+
+
+                    const valueElement = document.createElement("p");
+
+                    valueElement.className = "job-info-value";
+                    valueElement.textContent = value;
+
+
+                    text.appendChild(titleElement);
+                    text.appendChild(valueElement);
+
+
+                    // Put item together
+                    item.appendChild(iconBox);
+                    item.appendChild(text);
+
+                    info.appendChild(item);
+                }
+
+
+                // -------------------------------------------------
+                // EXCEPTIONS
+                // -------------------------------------------------
+
+                let exceptions = [];
+
+                try {
+                    exceptions = JSON.parse(job.exceptions);
+                }
+                catch {
+                    exceptions = [];
+                }
+
+
+                const exceptionText =
+                    exceptions.length > 0
+                        ? exceptions.join(", ")
+                        : "None";
+
+
+                // -------------------------------------------------
+                // ADD INFORMATION
+                // -------------------------------------------------
+
+                addInfo(
+                    "Source",
+                    job.source,
+                    "/gui/assets/Folder Icon.svg"
+                );
+
+
+                addInfo(
+                    "Destination",
+                    job.destination,
+                    "/gui/assets/Folder Icon.svg"
+                );
+
+
+                addInfo(
+                    "Time Period",
+                    job.time,
+                    "/gui/assets/Clock icon.svg"
+                );
+
+
+                addInfo(
+                    "Exceptions",
+                    exceptionText,
+                    "/gui/assets/Exceptions icon.svg"
+                );
+
+
+                addInfo(
+                    "Archiving",
+                    job.zip,
+                    "/gui/assets/Archive icon.svg"
+                );
+
+
+                // -------------------------------------------------
+                // BUILD CARD
+                // -------------------------------------------------
+
+                card.appendChild(header);
+                card.appendChild(separator);
+                card.appendChild(info);
+
+
+                // Add card to page
+                jobs.appendChild(card);
+
+            });
         }
 
 
+        // Display all jobs when the page first loads
+        renderJobs(data.jobs);
+
+
         // =========================================================
-        // CREATE A CARD FOR EVERY JOB
+        // JOB ID SEARCH
         // =========================================================
 
-        data.jobs.forEach(job => {
+        const jobSearch = document.querySelector("#job-id-search");
 
-            // -----------------------------------------------------
-            // CARD
-            // -----------------------------------------------------
 
-            const card = document.createElement("div");
+        // Only allow numbers
+        jobSearch.addEventListener("input", () => {
 
-            card.className = "job-card";
+            jobSearch.value =
+                jobSearch.value.replace(/\D/g, "");
 
+        });
 
-            // -----------------------------------------------------
-            // HEADER
-            // -----------------------------------------------------
 
-            const header = document.createElement("div");
+        // Search when Enter is pressed
+        jobSearch.addEventListener("keydown", event => {
 
-            header.className = "job-card-header";
-
-
-            // Job ID
-
-            const jobId = document.createElement("p");
-
-            jobId.className = "job-id";
-            jobId.textContent = "Job Id: " + job.job_id;
-
-
-            // Buttons container
-
-            const actions = document.createElement("div");
-
-            actions.className = "job-actions";
-
-
-            // Edit button
-
-            const editButton = document.createElement("button");
-
-            editButton.className = "job-edit";
-            editButton.type = "button";
-
-
-            const editIcon = document.createElement("img");
-
-            editIcon.src = "/gui/assets/Edit icon.svg";
-            editIcon.alt = "Edit";
-
-
-            editButton.appendChild(editIcon);
-
-
-            // Delete button
-
-            const deleteButton = document.createElement("button");
-
-            deleteButton.className = "job-delete";
-            deleteButton.type = "button";
-
-
-            const deleteIcon = document.createElement("img");
-
-            deleteIcon.src = "/gui/assets/Delete icon.svg";
-            deleteIcon.alt = "Delete";
-
-
-            deleteButton.appendChild(deleteIcon);
-
-
-            // Put buttons together
-
-            actions.appendChild(editButton);
-            actions.appendChild(deleteButton);
-
-
-            // Put header together
-
-            header.appendChild(jobId);
-            header.appendChild(actions);
-
-
-            // -----------------------------------------------------
-            // SEPARATOR
-            // -----------------------------------------------------
-
-            const separator = document.createElement("div");
-
-            separator.className = "job-separator";
-
-
-            // -----------------------------------------------------
-            // INFORMATION CONTAINER
-            // -----------------------------------------------------
-
-            const info = document.createElement("div");
-
-            info.className = "job-info";
-
-
-            // -----------------------------------------------------
-            // HELPER FOR INFORMATION ITEMS
-            // -----------------------------------------------------
-
-            function addInfo(title, value, iconPath) {
-
-                const item = document.createElement("div");
-
-                item.className = "job-info-item";
-
-
-                // Icon box
-
-                const iconBox = document.createElement("div");
-
-                iconBox.className = "job-icon";
-
-
-                const icon = document.createElement("img");
-
-                icon.className = "job-icon-image";
-                icon.src = iconPath;
-                icon.alt = "";
-
-
-                iconBox.appendChild(icon);
-
-
-                // Text
-
-                const text = document.createElement("div");
-
-                text.className = "job-info-text";
-
-
-                const titleElement = document.createElement("p");
-
-                titleElement.className = "job-info-title";
-                titleElement.textContent = title;
-
-
-                const valueElement = document.createElement("p");
-
-                valueElement.className = "job-info-value";
-                valueElement.textContent = value;
-
-
-                text.appendChild(titleElement);
-                text.appendChild(valueElement);
-
-
-                // Put item together
-
-                item.appendChild(iconBox);
-                item.appendChild(text);
-
-                info.appendChild(item);
+            if (event.key !== "Enter") {
+                return;
             }
 
 
-            // -----------------------------------------------------
-            // EXCEPTIONS
-            // -----------------------------------------------------
+            // Empty search → restore all jobs
+            if (jobSearch.value === "") {
 
-            let exceptions = [];
+                renderJobs(data.jobs);
 
-            try {
-                exceptions = JSON.parse(job.exceptions);
-            }
-            catch {
-                exceptions = [];
+                return;
             }
 
 
-            const exceptionText =
-                exceptions.length > 0
-                    ? exceptions.join(", ")
-                    : "None";
+            const id = Number(jobSearch.value);
 
 
-            // -----------------------------------------------------
-            // ADD JOB INFORMATION
-            // -----------------------------------------------------
-
-            addInfo(
-                "Source",
-                job.source,
-                "/gui/assets/Folder Icon.svg"
+            // Find matching job
+            const matchingJob = data.jobs.find(
+                job => job.job_id === id
             );
 
 
-            addInfo(
-                "Destination",
-                job.destination,
-                "/gui/assets/Folder Icon.svg"
-            );
+            // Job found → show only that job
+            if (matchingJob) {
 
+                renderJobs([matchingJob]);
 
-            addInfo(
-                "Time Period",
-                job.time,
-                "/gui/assets/Clock icon.svg"
-            );
+            }
 
+            // Job not found → show nothing
+            else {
 
-            addInfo(
-                "Exceptions",
-                exceptionText,
-                "/gui/assets/Exceptions icon.svg"
-            );
+                renderJobs([]);
 
-
-            addInfo(
-                "Archiving",
-                job.zip,
-                "/gui/assets/Archive icon.svg"
-            );
-
-
-            // -----------------------------------------------------
-            // PUT CARD TOGETHER
-            // -----------------------------------------------------
-
-            card.appendChild(header);
-            card.appendChild(separator);
-            card.appendChild(info);
-
-
-            // Add card to page
-
-            jobs.appendChild(card);
+            }
 
         });
 
     })
     .catch(error => {
-        console.error("Failed to get initial data:", error);
+
+        console.error(
+            "Failed to get initial data:",
+            error
+        );
+
     });
