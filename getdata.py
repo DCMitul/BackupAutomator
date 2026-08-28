@@ -27,8 +27,17 @@ def hconfig(action,key,value=None):
             print("invalid input for action", action)
 
 def getstore():
-    total, used, free = shutil.disk_usage(hconfig('read','backuploc'))
-    return round((used/total) * 100, 1)
+    path = Path(hconfig('read', 'backuploc'))
+
+    try:
+        usagepath = path if path.exists() else path.anchor
+
+        total, used, free = shutil.disk_usage(usagepath)
+
+        return round((used / total) * 100, 1)
+
+    except (FileNotFoundError, OSError):
+        return None
 
 
 def getfromdb(a,row=None):

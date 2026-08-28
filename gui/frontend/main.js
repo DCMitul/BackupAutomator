@@ -1,3 +1,5 @@
+let createExceptions = [];
+
 fetch("/api/initial-data")
     .then(response => {
         if (!response.ok) {
@@ -10,11 +12,6 @@ fetch("/api/initial-data")
 
         console.log("Initial data:", data);
 
-
-        // =========================================================
-        // FOOTER
-        // =========================================================
-
         document.querySelector(".ver").textContent =
             "Version: " + data.version;
 
@@ -25,177 +22,97 @@ fetch("/api/initial-data")
             "Total Jobs: " + data.jobs.length;
 
 
-        // =========================================================
-        // DISPLAY JOBS
-        // =========================================================
-
         function renderJobs(jobList) {
 
             const jobs = document.querySelector(".jobs");
 
-            // Clear current jobs
             jobs.innerHTML = "";
 
-
-            // No jobs to display
             if (jobList.length === 0) {
                 return;
             }
 
-
-            // Create a card for every job
             jobList.forEach(job => {
-
-                // -------------------------------------------------
-                // CARD
-                // -------------------------------------------------
 
                 const card = document.createElement("div");
                 card.className = "job-card";
 
-
-                // -------------------------------------------------
-                // HEADER
-                // -------------------------------------------------
-
                 const header = document.createElement("div");
                 header.className = "job-card-header";
 
-
-                // Job ID
                 const jobId = document.createElement("p");
                 jobId.className = "job-id";
                 jobId.textContent = "Job Id: " + job.job_id;
 
-
-                // Buttons container
                 const actions = document.createElement("div");
                 actions.className = "job-actions";
 
-
-                // -------------------------------------------------
-                // EDIT BUTTON
-                // -------------------------------------------------
-
                 const editButton = document.createElement("button");
-
                 editButton.className = "job-edit";
                 editButton.type = "button";
 
-
                 const editIcon = document.createElement("img");
-
                 editIcon.src = "/gui/assets/Edit icon.svg";
                 editIcon.alt = "Edit";
 
-
                 editButton.appendChild(editIcon);
 
-
-                // -------------------------------------------------
-                // DELETE BUTTON
-                // -------------------------------------------------
-
                 const deleteButton = document.createElement("button");
-
                 deleteButton.className = "job-delete";
                 deleteButton.type = "button";
 
-
                 const deleteIcon = document.createElement("img");
-
                 deleteIcon.src = "/gui/assets/Delete icon.svg";
                 deleteIcon.alt = "Delete";
 
-
                 deleteButton.appendChild(deleteIcon);
 
-
-                // Add buttons to actions
                 actions.appendChild(editButton);
                 actions.appendChild(deleteButton);
 
-
-                // Add ID and actions to header
                 header.appendChild(jobId);
                 header.appendChild(actions);
 
-
-                // -------------------------------------------------
-                // SEPARATOR
-                // -------------------------------------------------
-
                 const separator = document.createElement("div");
-
                 separator.className = "job-separator";
 
-
-                // -------------------------------------------------
-                // JOB INFORMATION
-                // -------------------------------------------------
-
                 const info = document.createElement("div");
-
                 info.className = "job-info";
 
-
-                // Helper function for information items
                 function addInfo(title, value, iconPath) {
 
                     const item = document.createElement("div");
-
                     item.className = "job-info-item";
 
-
-                    // Icon
                     const iconBox = document.createElement("div");
-
                     iconBox.className = "job-icon";
 
-
                     const icon = document.createElement("img");
-
                     icon.className = "job-icon-image";
                     icon.src = iconPath;
                     icon.alt = "";
 
-
                     iconBox.appendChild(icon);
 
-
-                    // Text
                     const text = document.createElement("div");
-
                     text.className = "job-info-text";
 
-
                     const titleElement = document.createElement("p");
-
                     titleElement.className = "job-info-title";
                     titleElement.textContent = title;
 
-
                     const valueElement = document.createElement("p");
-
                     valueElement.className = "job-info-value";
                     valueElement.textContent = value;
-
 
                     text.appendChild(titleElement);
                     text.appendChild(valueElement);
 
-
-                    // Put item together
                     item.appendChild(iconBox);
                     item.appendChild(text);
 
                     info.appendChild(item);
                 }
-
-
-                // -------------------------------------------------
-                // EXCEPTIONS
-                // -------------------------------------------------
 
                 let exceptions = [];
 
@@ -206,16 +123,10 @@ fetch("/api/initial-data")
                     exceptions = [];
                 }
 
-
                 const exceptionText =
                     exceptions.length > 0
                         ? exceptions.join(", ")
                         : "None";
-
-
-                // -------------------------------------------------
-                // ADD INFORMATION
-                // -------------------------------------------------
 
                 addInfo(
                     "Source",
@@ -223,13 +134,11 @@ fetch("/api/initial-data")
                     "/gui/assets/Folder Icon.svg"
                 );
 
-
                 addInfo(
                     "Destination",
                     job.destination,
                     "/gui/assets/Folder Icon.svg"
                 );
-
 
                 addInfo(
                     "Time Period",
@@ -237,13 +146,11 @@ fetch("/api/initial-data")
                     "/gui/assets/Clock icon.svg"
                 );
 
-
                 addInfo(
                     "Exceptions",
                     exceptionText,
                     "/gui/assets/Exceptions icon.svg"
                 );
-
 
                 addInfo(
                     "Archiving",
@@ -251,35 +158,21 @@ fetch("/api/initial-data")
                     "/gui/assets/Archive icon.svg"
                 );
 
-
-                // -------------------------------------------------
-                // BUILD CARD
-                // -------------------------------------------------
-
                 card.appendChild(header);
                 card.appendChild(separator);
                 card.appendChild(info);
 
-
-                // Add card to page
                 jobs.appendChild(card);
-
             });
         }
 
 
-        // Display all jobs when the page first loads
         renderJobs(data.jobs);
 
 
-        // =========================================================
-        // JOB ID SEARCH
-        // =========================================================
+        const jobSearch =
+            document.querySelector("#job-id-search");
 
-        const jobSearch = document.querySelector("#job-id-search");
-
-
-        // Only allow numbers
         jobSearch.addEventListener("input", () => {
 
             jobSearch.value =
@@ -287,16 +180,12 @@ fetch("/api/initial-data")
 
         });
 
-
-        // Search when Enter is pressed
         jobSearch.addEventListener("keydown", event => {
 
             if (event.key !== "Enter") {
                 return;
             }
 
-
-            // Empty search → restore all jobs
             if (jobSearch.value === "") {
 
                 renderJobs(data.jobs);
@@ -304,31 +193,609 @@ fetch("/api/initial-data")
                 return;
             }
 
-
             const id = Number(jobSearch.value);
 
-
-            // Find matching job
             const matchingJob = data.jobs.find(
                 job => job.job_id === id
             );
 
-
-            // Job found → show only that job
             if (matchingJob) {
-
                 renderJobs([matchingJob]);
-
             }
-
-            // Job not found → show nothing
             else {
-
                 renderJobs([]);
-
             }
 
         });
+
+
+        const settingsButton =
+            document.querySelector("#settings-button");
+
+        const settingsOverlay =
+            document.querySelector("#settings-overlay");
+
+
+        settingsButton.addEventListener("click", () => {
+
+            settingsOverlay.style.display = "flex";
+
+            fetch("/api/settings")
+                .then(response => {
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error: ${response.status}`);
+                    }
+
+                    return response.json();
+
+                })
+                .then(settings => {
+
+                    document.querySelector(
+                        "#setting-backuploc"
+                    ).value = settings.backuploc;
+
+                    const timeMatch =
+                        settings.time.match(/^(\d+)(mm|m|h|d)$/);
+
+                    if (timeMatch) {
+
+                        document.querySelector(
+                            "#setting-time"
+                        ).value = timeMatch[1];
+
+                        document.querySelector(
+                            "#setting-time-unit"
+                        ).value = timeMatch[2];
+
+                    }
+
+                    document.querySelector(
+                        "#setting-zip"
+                    ).checked = settings.zip;
+
+                    document.querySelector(
+                        "#setting-logging"
+                    ).checked = settings.logging;
+
+                })
+                .catch(error => {
+
+                    console.error(
+                        "Failed to get settings:",
+                        error
+                    );
+
+                });
+
+        });
+
+
+        document.querySelector("#settings-save")
+            .addEventListener("click", () => {
+
+                const settings = {
+
+                    backuploc:
+                        document.querySelector(
+                            "#setting-backuploc"
+                        ).value,
+
+                    timeperiod:
+                        document.querySelector(
+                            "#setting-time"
+                        ).value +
+                        document.querySelector(
+                            "#setting-time-unit"
+                        ).value,
+
+                    zip:
+                        document.querySelector(
+                            "#setting-zip"
+                        ).checked,
+
+                    logging:
+                        document.querySelector(
+                            "#setting-logging"
+                        ).checked
+
+                };
+
+
+                fetch("/api/settings", {
+
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify(settings)
+
+                })
+                    .then(response => {
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `HTTP error: ${response.status}`
+                            );
+                        }
+
+                        return response.json();
+
+                    })
+                    .then(result => {
+
+                        console.log(
+                            "Settings saved:",
+                            result
+                        );
+
+                        settingsOverlay.style.display =
+                            "none";
+
+                    })
+                    .catch(error => {
+
+                        console.error(
+                            "Failed to save settings:",
+                            error
+                        );
+
+                    });
+
+            });
+
+
+        document.querySelector("#delete-all")
+            .addEventListener("click", () => {
+
+                const confirmed = confirm(
+                    "Are you sure you want to delete all backup jobs?"
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                fetch("/api/jobs", {
+                    method: "DELETE"
+                })
+                    .then(response => {
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `HTTP error: ${response.status}`
+                            );
+                        }
+
+                        return response.json();
+
+                    })
+                    .then(result => {
+
+                        console.log(
+                            "All jobs deleted:",
+                            result
+                        );
+
+                        document.querySelector(".jobs")
+                            .innerHTML = "";
+
+                        document.querySelector(".total")
+                            .textContent = "Total Jobs: 0";
+
+                        data.jobs = [];
+
+                    })
+                    .catch(error => {
+
+                        console.error(
+                            "Failed to delete all jobs:",
+                            error
+                        );
+
+                    });
+
+            });
+
+
+        settingsOverlay.addEventListener(
+            "click",
+            event => {
+
+                if (event.target === settingsOverlay) {
+                    settingsOverlay.style.display = "none";
+                }
+
+            }
+        );
+
+
+        const createButton =
+            document.querySelector("#create-button");
+
+        const createOverlay =
+            document.querySelector("#create-overlay");
+
+        const createError =
+            document.querySelector("#create-error");
+
+
+        createButton.addEventListener("click", () => {
+
+            createOverlay.style.display = "flex";
+
+            createError.style.display = "none";
+            createError.textContent = "";
+
+            document.querySelector("#create-source").value = "";
+
+            document.querySelector("#create-destination").value = "";
+
+            document.querySelector("#create-time").value = "";
+
+            document.querySelector("#create-time-unit").value = "m";
+
+            document.querySelector("#create-wildcards").value = "";
+
+            document.querySelector("#create-zip").checked = false;
+
+            createExceptions = [];
+
+            displayExceptions();
+
+
+            fetch("/api/settings")
+                .then(response => {
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `HTTP error: ${response.status}`
+                        );
+                    }
+
+                    return response.json();
+
+                })
+                .then(settings => {
+
+                    document.querySelector(
+                        "#create-destination"
+                    ).value = settings.backuploc;
+
+
+                    const timeMatch =
+                        settings.time.match(
+                            /^(\d+)(mm|m|h|d)$/
+                        );
+
+                    if (timeMatch) {
+
+                        document.querySelector(
+                            "#create-time"
+                        ).value = timeMatch[1];
+
+                        document.querySelector(
+                            "#create-time-unit"
+                        ).value = timeMatch[2];
+
+                    }
+
+
+                    document.querySelector(
+                        "#create-zip"
+                    ).checked = settings.zip;
+
+                })
+                .catch(error => {
+
+                    console.error(
+                        "Failed to get Create Job defaults:",
+                        error
+                    );
+
+                });
+
+        });
+
+
+        document.querySelector("#create-cancel")
+            .addEventListener("click", () => {
+
+                createOverlay.style.display = "none";
+
+            });
+
+
+        createOverlay.addEventListener(
+            "click",
+            event => {
+
+                if (event.target === createOverlay) {
+                    createOverlay.style.display = "none";
+                }
+
+            }
+        );
+
+
+        async function browsePath(mode, inputSelector) {
+
+            try {
+
+                const response = await fetch(
+                    "/api/browse",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            mode: mode
+                        })
+                    }
+                );
+
+
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP error: ${response.status}`
+                    );
+                }
+
+
+                const result = await response.json();
+
+
+                if (
+                    result.path === null ||
+                    result.path === undefined ||
+                    result.path === "" ||
+                    (
+                        Array.isArray(result.path) &&
+                        result.path.length === 0
+                    )
+                ) {
+                    return;
+                }
+
+
+                if (mode === "files") {
+
+                    if (!Array.isArray(result.path)) {
+                        return;
+                    }
+
+                    result.path.forEach(path => {
+
+                        if (!createExceptions.includes(path)) {
+                            createExceptions.push(path);
+                        }
+
+                    });
+
+                    displayExceptions();
+
+                    return;
+                }
+
+
+                document.querySelector(inputSelector).value =
+                    result.path;
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Failed to select path:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        function displayExceptions() {
+
+            const list =
+                document.querySelector(
+                    "#create-exceptions-list"
+                );
+
+            const input =
+                document.querySelector(
+                    "#create-exceptions"
+                );
+
+
+            list.innerHTML = "";
+
+
+            if (createExceptions.length === 0) {
+
+                input.value = "";
+
+                return;
+            }
+
+
+            input.value =
+                createExceptions.length === 1
+                    ? "1 file selected"
+                    : `${createExceptions.length} files selected`;
+
+
+            createExceptions.forEach((path, index) => {
+
+                const item =
+                    document.createElement("div");
+
+                item.className =
+                    "create-exception";
+
+
+                const name =
+                    document.createElement("span");
+
+                name.textContent =
+                    path.split(/[/\\]/).pop();
+
+
+                const remove =
+                    document.createElement("button");
+
+                remove.type = "button";
+                remove.textContent = "×";
+
+
+                remove.addEventListener("click", () => {
+
+                    createExceptions.splice(index, 1);
+
+                    displayExceptions();
+
+                });
+
+
+                item.appendChild(name);
+                item.appendChild(remove);
+
+                list.appendChild(item);
+
+            });
+
+        }
+
+
+        document.querySelectorAll(
+            ".browse-folder, .browse-path"
+        ).forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const mode =
+                    button.dataset.mode || "folder";
+
+                browsePath(
+                    mode,
+                    button.dataset.target
+                );
+
+            });
+
+        });
+
+
+        document.querySelector("#create-job")
+            .addEventListener("click", async () => {
+
+                createError.style.display = "none";
+                createError.textContent = "";
+
+
+                const jobData = {
+
+                    source:
+                        document.querySelector(
+                            "#create-source"
+                        ).value,
+
+                    destination:
+                        document.querySelector(
+                            "#create-destination"
+                        ).value,
+
+                    time:
+                        document.querySelector(
+                            "#create-time"
+                        ).value +
+                        document.querySelector(
+                            "#create-time-unit"
+                        ).value,
+
+                    exceptions:
+                        createExceptions,
+
+                    wildcards:
+                        document.querySelector(
+                            "#create-wildcards"
+                        ).value,
+
+                    zip:
+                        document.querySelector(
+                            "#create-zip"
+                        ).checked
+
+                };
+
+
+                try {
+
+                    const response = await fetch(
+                        "/api/jobs",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(jobData)
+                        }
+                    );
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        createError.textContent =
+                            result.error ||
+                            "The inputs are not valid.";
+
+                        createError.style.display =
+                            "block";
+
+                        return;
+
+                    }
+
+
+                    if (result.success) {
+
+                        createOverlay.style.display =
+                            "none";
+
+                        location.reload();
+
+                    }
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "Failed to create job:",
+                        error
+                    );
+
+                    createError.textContent =
+                        "Could not contact the server.";
+
+                    createError.style.display =
+                        "block";
+
+                }
+
+            });
 
     })
     .catch(error => {
@@ -339,149 +806,3 @@ fetch("/api/initial-data")
         );
 
     });
-
-const settingsButton =
-    document.querySelector("#settings-button");
-
-const settingsOverlay =
-    document.querySelector("#settings-overlay");
-
-
-settingsButton.addEventListener("click", () => {
-
-    settingsOverlay.style.display = "flex";
-
-    fetch("/api/settings")
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
-            }
-
-            return response.json();
-        })
-        .then(settings => {
-
-            document.querySelector("#setting-backuploc").value =
-                settings.backuploc;
-
-            const timeMatch = settings.time.match(/^(\d+)(mm|m|h|d)$/);
-                    
-            if (timeMatch) {
-                document.querySelector("#setting-time").value =
-                    timeMatch[1];
-            
-                document.querySelector("#setting-time-unit").value =
-                    timeMatch[2];
-            }
-
-            document.querySelector("#setting-zip").checked =
-                settings.zip;
-
-            document.querySelector("#setting-logging").checked =
-                settings.logging;
-        })
-        .catch(error => {
-            console.error("Failed to get settings:", error);
-        });
-});
-
-document.querySelector("#settings-save").addEventListener("click", () => {
-
-    const settings = {
-        backuploc:
-            document.querySelector("#setting-backuploc").value,
-    
-        timeperiod:
-            document.querySelector("#setting-time").value +
-            document.querySelector("#setting-time-unit").value,
-    
-        zip:
-            document.querySelector("#setting-zip").checked,
-    
-        logging:
-            document.querySelector("#setting-logging").checked
-    };
-
-
-    fetch("/api/settings", {
-        method: "PUT",
-
-        headers: {
-            "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify(settings)
-    })
-        .then(response => {
-
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
-            }
-
-            return response.json();
-        })
-        .then(result => {
-
-            console.log("Settings saved:", result);
-
-            settingsOverlay.style.display = "none";
-        })
-        .catch(error => {
-
-            console.error("Failed to save settings:", error);
-        });
-});
-
-document.querySelector("#delete-all").addEventListener("click", () => {
-
-    const confirmed = confirm(
-        "Are you sure you want to delete all backup jobs?"
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    fetch("/api/jobs", {
-        method: "DELETE"
-    })
-        .then(response => {
-
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
-            }
-
-            return response.json();
-        })
-        .then(result => {
-
-            console.log("All jobs deleted:", result);
-
-            // Remove all cards
-            document.querySelector(".jobs").innerHTML = "";
-
-            // Update total
-            document.querySelector(".total").textContent =
-                "Total Jobs: 0";
-
-        })
-        .catch(error => {
-
-            console.error(
-                "Failed to delete all jobs:",
-                error
-            );
-
-        });
-
-});
-
-
-settingsOverlay.addEventListener("click", event => {
-
-    if (event.target === settingsOverlay) {
-        settingsOverlay.style.display = "none";
-    }
-
-});

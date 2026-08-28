@@ -19,7 +19,9 @@
             </div>
             <div class="pure-u-1-12"></div>
             <div class="pure-u-1-6">
-                <img class="pure-img image" src="/gui/assets/Create button.png" alt="Create Button">
+                <button class="create-button" id="create-button" type="button">
+                    <img class="pure-img image" src="/gui/assets/Create button.png" alt="Create">
+                </button>
             </div>
                 <div class="pure-u-1-24">
                     <button class="settings-button" id="settings-button" type="button">
@@ -62,6 +64,242 @@
         </div>
     </div>
 
+<!-- CREATE JOB OVERLAY STARTS FROM HERE -->
+<div class="create-overlay" id="create-overlay">
+
+    <div class="create-panel">
+
+        <h1>Create Job</h1>
+
+        <div class="create-separator"></div>
+
+        <div class="create-item">
+
+            <img
+                src="/gui/assets/Folder Icon.svg"
+                alt=""
+                class="create-icon"
+            >
+
+            <div class="create-content">
+
+                <h2>Source</h2>
+
+                <div class="create-control">
+
+                    <input
+                        type="text"
+                        id="create-source"
+                        placeholder="Select source"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        class="browse-path"
+                        data-mode="source"
+                        data-target="#create-source"
+                    >
+                        Browse
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="create-item">
+
+            <img
+                src="/gui/assets/Folder Icon.svg"
+                alt=""
+                class="create-icon"
+            >
+
+            <div class="create-content">
+
+                <h2>Destination</h2>
+
+                <div class="create-control">
+
+                    <input
+                        type="text"
+                        id="create-destination"
+                        placeholder="Select destination"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        class="browse-path"
+                        data-mode="folder"
+                        data-target="#create-destination"
+                    >
+                        Browse
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="create-item">
+
+            <img
+                src="/gui/assets/Clock icon.svg"
+                alt=""
+                class="create-icon"
+            >
+
+            <div class="create-content">
+
+                <h2>Time Period</h2>
+
+                <div class="create-control">
+
+                    <input
+                        type="number"
+                        id="create-time"
+                        min="1"
+                        placeholder="Time"
+                    >
+
+                    <select id="create-time-unit">
+
+                        <option value="m">Minutes</option>
+                        <option value="h">Hours</option>
+                        <option value="d">Days</option>
+                        <option value="mm">Months</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="create-item">
+        
+            <img
+                src="/gui/assets/Exceptions icon.svg"
+                alt=""
+                class="create-icon"
+            >
+        
+            <div class="create-content">
+            
+                <h2>Exceptions</h2>
+            
+                <div class="create-control">
+                
+                    <input
+                        type="text"
+                        id="create-exceptions"
+                        placeholder="No files selected"
+                        readonly
+                    >
+                
+                    <button
+                        type="button"
+                        class="browse-path"
+                        data-mode="files"
+                        data-target="#create-exceptions"
+                    >
+                        Browse
+                    </button>
+                
+                </div>
+            
+                <div
+                    id="create-exceptions-list"
+                    class="create-exceptions-list"
+                ></div>
+            
+            </div>
+        
+        </div>
+
+        <div class="create-item">
+
+            <img
+                src="/gui/assets/Exceptions icon.svg"
+                alt=""
+                class="create-icon"
+            >
+
+            <div class="create-content">
+
+                <h2>Wildcard Exceptions</h2>
+
+                <div class="create-control">
+
+                    <input
+                        type="text"
+                        id="create-wildcards"
+                        placeholder="Enter wildcard patterns"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="create-item">
+
+            <img
+                src="/gui/assets/Archive icon.svg"
+                alt=""
+                class="create-icon"
+            >
+
+            <div class="create-content">
+
+                <h2>Archiving</h2>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="create-zip"
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+        </div>
+
+        <div id="create-error" class="create-error"></div>
+        <button
+            type="button"
+            id="create-job"
+            class="create-action create-confirm"
+        >
+            Create Job
+        </button>
+
+        <button
+            type="button"
+            id="create-cancel"
+            class="create-action create-cancel"
+        >
+            Cancel
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- SETTINGS OVERLAY STARTS FROM HERE -->
     <div class="settings-overlay" id="settings-overlay">
 
         <div class="settings-panel">
@@ -83,9 +321,14 @@
                             type="text"
                             id="setting-backuploc"
                             placeholder="Default backup folder"
+                            readonly
                         >
 
-                        <button type="button">
+                        <button
+                            type="button"
+                            class="browse-folder"
+                            data-target="#setting-backuploc"
+                        >
                             Browse
                         </button>
                     </div>

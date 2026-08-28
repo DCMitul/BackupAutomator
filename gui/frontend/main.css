@@ -279,7 +279,8 @@ body {
 
 /* AI CODE ENDS HERE */
 
-.settings-overlay {
+.settings-overlay,
+.create-overlay {
     position: fixed;
 
     inset: 0;
@@ -296,7 +297,8 @@ body {
     z-index: 1000;
 }
 
-.settings-panel {
+.settings-panel,
+.create-panel {
     width: 65vw;
     max-width: 950px;
 
@@ -312,11 +314,11 @@ body {
 
     box-sizing: border-box;
 
-    /* Hide scrollbar */
     scrollbar-width: none;
 }
 
-.settings-panel::-webkit-scrollbar {
+.settings-panel::-webkit-scrollbar,
+.create-panel::-webkit-scrollbar {
     display: none;
 }
 
@@ -328,8 +330,6 @@ body {
     font-size: 8vh;
 }
 
-
-/* SEPARATOR */
 
 .settings-separator {
     width: 90%;
@@ -496,6 +496,160 @@ body {
     transform: translateX(4vh);
 }
 
+
+.create-panel h1 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 8vh;
+}
+
+.create-separator {
+    width: 90%;
+    height: 0.7vh;
+
+    margin: 3vh auto 6vh;
+
+    background-color: #b3b3b3;
+}
+
+.create-panel h1 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 8vh;
+}
+
+.create-separator {
+    width: 90%;
+    height: 0.7vh;
+
+    margin: 3vh auto 6vh;
+
+    background-color: #b3b3b3;
+}
+
+.create-item {
+    display: flex;
+    align-items: center;
+
+    gap: 2vw;
+
+    margin-bottom: 5vh;
+
+    min-width: 0;
+}
+
+.create-icon {
+    flex-shrink: 0;
+
+    width: 9vh;
+    height: 9vh;
+
+    padding: 1vh;
+
+    box-sizing: border-box;
+
+    border-radius: 1.5vh;
+
+    background-color: #b8f6f8;
+
+    object-fit: contain;
+}
+
+.create-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.create-content h2 {
+    margin: 0 0 1vh;
+
+    font-size: 4vh;
+}
+
+.create-control {
+    display: flex;
+
+    gap: 1vw;
+
+    width: 100%;
+}
+
+.create-control input,
+.create-control select {
+    height: 5vh;
+
+    box-sizing: border-box;
+
+    font-size: 2vh;
+}
+
+.create-control input {
+    flex: 1;
+    min-width: 0;
+}
+
+.create-error {
+    display: none;
+
+    width: 100%;
+
+    margin-top: 2vh;
+    padding: 1.5vh;
+
+    box-sizing: border-box;
+
+    background-color: #ffe0e0;
+    border: 0.2vh solid #ff1030;
+    border-radius: 1.5vh;
+
+    color: #c00000;
+
+    font-size: 2vh;
+}
+
+.create-exceptions-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.5vh;
+
+    margin-top: 1vh;
+}
+
+.create-exception {
+    display: flex;
+    align-items: center;
+
+    gap: 1vw;
+
+    min-width: 0;
+}
+
+.create-exception span {
+    flex: 1;
+    min-width: 0;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    font-size: 1.8vh;
+}
+
+.create-exception button {
+    flex-shrink: 0;
+
+    border: none;
+    background: transparent;
+
+    font-size: 2.5vh;
+
+    cursor: pointer;
+}
 
 .bottombar {
     position: relative;
