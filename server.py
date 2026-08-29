@@ -730,7 +730,7 @@ def edit_job(job_id):
         wildcards,
         zip_value
     )
-
+    taskschedule()
     return jsonify({
         "success": True,
         "job_id": job_id
