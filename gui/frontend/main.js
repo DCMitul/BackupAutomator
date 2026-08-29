@@ -2,6 +2,38 @@ let createExceptions = [];
 let createWildcards = [];
 let editingJobId = null;
 
+function showActionMessage(message) {
+
+    const messageBox =
+        document.querySelector("#action-message");
+
+    if (!messageBox) {
+        return;
+    }
+
+    messageBox.textContent = message;
+    messageBox.style.display = "block";
+
+    setTimeout(() => {
+        messageBox.style.display = "none";
+    }, 2500);
+
+}
+
+const pendingActionMessage =
+    sessionStorage.getItem("actionMessage");
+
+if (pendingActionMessage) {
+
+    sessionStorage.removeItem("actionMessage");
+
+    setTimeout(() => {
+        showActionMessage(pendingActionMessage);
+    }, 100);
+
+}
+
+
 fetch("/api/initial-data")
     .then(response => {
         if (!response.ok) {
@@ -44,9 +76,11 @@ fetch("/api/initial-data")
                     noJobs.textContent = "No Backup Jobs Found.";
 
                     jobs.appendChild(noJobs);
+
                 }
 
                 return;
+
             }
 
 
@@ -152,6 +186,7 @@ fetch("/api/initial-data")
                     item.appendChild(text);
 
                     info.appendChild(item);
+
                 }
 
 
@@ -226,6 +261,7 @@ fetch("/api/initial-data")
                         `Are you sure you want to delete Job ${job.job_id}?`
                     );
 
+
                     if (!confirmed) {
                         return;
                     }
@@ -270,6 +306,11 @@ fetch("/api/initial-data")
                         renderJobs(
                             data.jobs,
                             true
+                        );
+
+
+                        showActionMessage(
+                            `Job ${job.job_id} deleted successfully.`
                         );
 
                     }
@@ -492,8 +533,14 @@ fetch("/api/initial-data")
                             result
                         );
 
+
                         settingsOverlay.style.display =
                             "none";
+
+
+                        showActionMessage(
+                            "Settings saved successfully."
+                        );
 
                     })
                     .catch(error => {
@@ -576,6 +623,13 @@ fetch("/api/initial-data")
                             ? "Stop backup script autorun"
                             : "Start backup script autorun";
 
+
+                    showActionMessage(
+                        result.autorun
+                            ? "Autorun started successfully."
+                            : "Autorun stopped successfully."
+                    );
+
                 }
                 catch (error) {
 
@@ -623,15 +677,23 @@ fetch("/api/initial-data")
                             result
                         );
 
+
                         data.jobs = [];
+
 
                         document.querySelector(".total")
                             .textContent =
                                 "Total Jobs: 0";
 
+
                         renderJobs(
                             [],
                             true
+                        );
+
+
+                        showActionMessage(
+                            "All jobs deleted successfully."
                         );
 
                     })
@@ -1134,6 +1196,7 @@ fetch("/api/initial-data")
                     );
 
                     return;
+
                 }
 
 
@@ -1520,13 +1583,31 @@ fetch("/api/initial-data")
 
                         if (result.success) {
 
+                            const wasEditing =
+                                editingJobId !== null;
+
+                            const jobMessage =
+                                wasEditing
+                                    ? "Job updated successfully."
+                                    : "Job created successfully.";
+
+
+                            sessionStorage.setItem(
+                                "actionMessage",
+                                jobMessage
+                            );
+
+
                             createOverlay.style.display =
                                 "none";
+
 
                             editingJobId =
                                 null;
 
+
                             resetCreateForm();
+
 
                             location.reload();
 
@@ -1559,16 +1640,3 @@ fetch("/api/initial-data")
         );
 
     });
-
-    function showActionMessage(message) {
-    
-        const messageBox =
-            document.querySelector("#action-message");
-    
-        messageBox.textContent = message;
-        messageBox.style.display = "block";
-    
-        setTimeout(() => {
-            messageBox.style.display = "none";
-        }, 2500);
-    }

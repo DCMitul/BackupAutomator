@@ -15,7 +15,7 @@ When I started, I didn't want much of this: just a simple CLI which takes inputs
 But on the bright side, this did help me get familiar with both front and back end, so I'll take it as a win.
 
 ## Setting Up
-Nothing much here, jsut download the exe installer from the releases and run it, taht should do everything
+Nothing much here, jsut download the exe installer from the releases and run it, that should do everything.
 
 ## Getting satrted with the program
 
@@ -35,6 +35,35 @@ There are two ways to open the GUI-
 
 ## Screenshots from the program
 
+### From the CLI
+Opening the program
+![image](/gui/assets/Homecli.png)
+
+Creating a job
+![image](/gui/assets/creatingjb.png)
+
+The View/Edit jobs option
+![image](/gui/assets/viewjb.png)
+
+The Settings option
+![image](/gui/assets/sett.png)
+
+
+### From the GUI
+The homepage with some jobs
+![image](/gui/assets/homejob.png)
+
+The homepage without jobs
+![image](/gui/assets/homenojob.png)
+
+The Settings menu
+![image](/gui/assets/settmenu.png)
+
+The Create Job panel
+![image](/gui/assets/create.png)
+
+The Edit Job panel
+![image](/gui/assets/edit.png)
 
 ## Problems?
 
