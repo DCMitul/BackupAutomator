@@ -53,10 +53,10 @@ def taskschedule():
         delete_task_if_exists(name)
         return
 
-    MAX_INTERVAL = 120
+    MAXINTERVAL = 120
     a = reduce(gcd, dur)
-    if a > MAX_INTERVAL:
-        for i in range(MAX_INTERVAL, 0, -1):
+    if a > MAXINTERVAL:
+        for i in range(MAXINTERVAL, 0, -1):
             if a % i == 0:
                 a = i
                 break

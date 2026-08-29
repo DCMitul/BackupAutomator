@@ -3,7 +3,7 @@ from flask import send_from_directory
 from flask import jsonify
 from flask import request
 from pathlib import Path
-from getdata import getdef, changedef, hconfig, addtodb, editdb
+from getdata import getdef, changedef, hconfig, addtodb, editdb, taskschedule, setautorun
 import sqlite3
 from tkinter import Tk
 from tkinter.filedialog import askdirectory, askopenfilename, askopenfilenames
@@ -69,6 +69,49 @@ def settings_put():
         "success": True
     })
 
+
+@app.route("/api/jobs/<int:job_id>", methods=["DELETE"])
+def delete_job(job_id):
+
+    conn = sqlite3.connect(
+        hconfig("read", "DB")
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT job_id FROM jobs WHERE job_id = ?",
+        (job_id,)
+    )
+
+    job = cursor.fetchone()
+
+    conn.close()
+
+    if job is None:
+        return jsonify({
+            "success": False,
+            "error": "Job not found."
+        }), 404
+
+
+    editdb(
+        job_id,
+        "DELETED",
+        "DELETED",
+        "DELETED",
+        0,
+        [],
+        [],
+        "DELETED"
+    )
+
+    taskschedule()
+    return jsonify({
+        "success": True
+    })
+
+
 @app.route("/api/jobs", methods=["DELETE"])
 def delete_all_jobs():
 
@@ -88,9 +131,13 @@ def delete_all_jobs():
     conn.commit()
     conn.close()
 
+    hconfig('change','autorun',False)
+    taskschedule()
+
     return jsonify({
         "success": True
     })
+
 
 
 def pickfolder():
@@ -412,6 +459,8 @@ def create_job():
         zip_value
     )
 
+    hconfig('change','autorun',True)
+    taskschedule()
     return jsonify({
         "success": True,
         "job_id": rowid
@@ -685,6 +734,40 @@ def edit_job(job_id):
     return jsonify({
         "success": True,
         "job_id": job_id
+    })
+
+
+@app.route("/api/autorun", methods=["PUT"])
+def autorun_put():
+
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "success": False,
+            "error": "Invalid autorun data."
+        }), 400
+
+    value = data.get("autorun")
+
+    if not isinstance(value, bool):
+        return jsonify({
+            "success": False,
+            "error": "Autorun value must be true or false."
+        }), 400
+
+    try:
+        result = setautorun(value)
+
+    except Exception as error:
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+    return jsonify({
+        "success": True,
+        "autorun": result
     })
 
 

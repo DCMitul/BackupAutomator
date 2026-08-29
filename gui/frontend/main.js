@@ -410,6 +410,14 @@ fetch("/api/initial-data")
                     ).checked =
                         settings.logging;
 
+
+                    document.querySelector(
+                        "#autorun-toggle"
+                    ).textContent =
+                        settings.autorun
+                            ? "Stop backup script autorun"
+                            : "Start backup script autorun";
+
                 })
                 .catch(error => {
 
@@ -496,6 +504,87 @@ fetch("/api/initial-data")
                         );
 
                     });
+
+            });
+
+
+        document.querySelector("#autorun-toggle")
+            .addEventListener("click", async () => {
+
+                const button =
+                    document.querySelector(
+                        "#autorun-toggle"
+                    );
+
+
+                try {
+
+                    const settingsResponse =
+                        await fetch(
+                            "/api/settings"
+                        );
+
+
+                    if (!settingsResponse.ok) {
+                        throw new Error(
+                            `HTTP error: ${settingsResponse.status}`
+                        );
+                    }
+
+
+                    const settings =
+                        await settingsResponse.json();
+
+
+                    const newValue =
+                        !settings.autorun;
+
+
+                    const response =
+                        await fetch(
+                            "/api/autorun",
+                            {
+                                method: "PUT",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify({
+                                        autorun: newValue
+                                    })
+                            }
+                        );
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.error ||
+                            "Failed to change autorun."
+                        );
+                    }
+
+
+                    button.textContent =
+                        result.autorun
+                            ? "Stop backup script autorun"
+                            : "Start backup script autorun";
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "Failed to change autorun:",
+                        error
+                    );
+
+                }
 
             });
 
@@ -1470,3 +1559,16 @@ fetch("/api/initial-data")
         );
 
     });
+
+    function showActionMessage(message) {
+    
+        const messageBox =
+            document.querySelector("#action-message");
+    
+        messageBox.textContent = message;
+        messageBox.style.display = "block";
+    
+        setTimeout(() => {
+            messageBox.style.display = "none";
+        }, 2500);
+    }

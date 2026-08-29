@@ -3,6 +3,11 @@ from pathlib import Path
 import sqlite3
 import shutil
 import time
+import subprocess
+from math import gcd
+from functools import reduce
+import sys
+
 
 
 # This script won't work if there was no config
@@ -26,6 +31,65 @@ def hconfig(action,key,value=None):
                 json.dump(temp, f, indent=4)
         else:
             print("invalid input for action", action)
+
+
+def delete_task_if_exists(name):
+    result = subprocess.run(
+        ["schtasks", "/query", "/tn", name],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode == 0:
+        subprocess.run(["schtasks", "/delete", "/tn", name, "/f"], check=True)
+
+
+def taskschedule():
+    name = hconfig('read', 'taskname')
+
+    if not hconfig('read', 'autorun'):
+        delete_task_if_exists(name)
+        return
+
+    conn = sqlite3.connect(hconfig('read', 'DB'))
+    cursor = conn.cursor()
+    cursor.execute("SELECT duration FROM jobs WHERE duration != 0")
+    dur = [row[0] for row in cursor.fetchall()]
+    conn.close()
+
+    if not dur:
+        delete_task_if_exists(name)
+        return
+
+    MAXINTERVAL = 120
+    a = reduce(gcd, dur)
+    if a > MAXINTERVAL:
+        for i in range(MAXINTERVAL, 0, -1):
+            if a % i == 0:
+                a = i
+                break
+
+    python_exe = Path(sys.executable).with_name("pythonw.exe")
+    script = Path(hconfig("read", "script"))
+
+    delete_task_if_exists(name)
+    subprocess.run([
+        "schtasks", "/create", "/tn", name, "/sc", "minute",
+        "/mo", str(a), "/tr", f'"{python_exe}" "{script}"', "/f"
+    ], check=True)
+
+    # print(a)
+
+
+def setautorun(value):
+
+    if not isinstance(value, bool):
+        raise ValueError("Autorun value must be a boolean.")
+
+    hconfig("change", "autorun", value)
+    taskschedule()
+
+    return value
+
 
 def getstore():
     path = Path(hconfig('read', 'backuploc'))
