@@ -86,7 +86,7 @@ def check_config():
             "zip": False,
             "log": "",
             "bkper": str(BASEDIR / "script.py"),
-            "version": "1.0"
+            "version": "0.9 [In testing]"
         }
 
         with open(CONFIGPATH, "w") as f:

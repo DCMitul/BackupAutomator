@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import sqlite3
 import shutil
+import time
 
 
 # This script won't work if there was no config
@@ -87,6 +88,96 @@ def getinitialdata():
         "jobs": getfromdb("all")
     }
 
+
+def addtodb(source, destination, times, duration, exceptions, wildcards, zip):
+
+    exception = json.dumps(exceptions + wildcards)
+
+    conn = sqlite3.connect(hconfig("read", "DB"))
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO jobs (source, destination, time, duration, exceptions, zip)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        source,
+        destination,
+        times,
+        duration,
+        exception,
+        zip
+    ))
+
+    lst = int(time.time() // 60 * 60)
+    nxt = lst + (duration * 60)
+
+    rowid = cursor.lastrowid
+
+    cursor.execute("""
+        INSERT INTO schedule (job_id, last, next)
+        VALUES (?, ?, ?)
+    """, (
+        rowid,
+        lst,
+        nxt
+    ))
+
+    conn.commit()
+    conn.close()
+
+    hconfig("change", "autorun", True)
+
+    return rowid
+
+
+def editdb(job_id,source, destination, times, duration, exceptions, wildcards, zip):
+
+    exception = json.dumps(exceptions + wildcards)
+
+    conn = sqlite3.connect(hconfig("read", "DB"))
+
+    conn.execute("PRAGMA foreign_keys = ON")
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE jobs
+        SET source = ?,
+            destination = ?,
+            time = ?,
+            duration = ?,
+            exceptions = ?,
+            zip = ?
+        WHERE job_id = ?
+    """, (
+        source,
+        destination,
+        times,
+        duration,
+        exception,
+        zip,
+        job_id
+    ))
+
+    lst = int(time.time() // 60 * 60)
+
+    nxt = lst + (duration * 60)
+
+    cursor.execute("""
+        UPDATE schedule
+        SET next = ?
+        WHERE job_id = ?
+    """, (
+        nxt,
+        job_id
+    ))
+
+    conn.commit()
+
+    conn.close()
+
+    return job_id
 
 BASEDIR = Path(__file__).resolve().parent
 CNFPATH = Path(BASEDIR / "config.json")

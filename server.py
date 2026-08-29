@@ -3,10 +3,12 @@ from flask import send_from_directory
 from flask import jsonify
 from flask import request
 from pathlib import Path
-from getdata import getdef,changedef,hconfig
+from getdata import getdef, changedef, hconfig, addtodb, editdb
 import sqlite3
 from tkinter import Tk
 from tkinter.filedialog import askdirectory, askopenfilename, askopenfilenames
+import re
+import fnmatch
 
 
 
@@ -78,6 +80,10 @@ def delete_all_jobs():
 
     cursor.execute("DELETE FROM schedule")
     cursor.execute("DELETE FROM jobs")
+
+    cursor.execute(
+        "DELETE FROM sqlite_sequence WHERE name = 'jobs'"
+    )
 
     conn.commit()
     conn.close()
@@ -203,46 +209,39 @@ def create_job():
             "error": "Invalid job data."
         }), 400
 
-
-    source = data.get("source")
-    destination = data.get("destination")
-    time = data.get("time")
+    source = data.get("source", "").strip()
+    destination = data.get("destination", "").strip()
+    time_period = data.get("time", "").strip()
     exceptions = data.get("exceptions", [])
-    wildcards = data.get("wildcards", "")
-    zip_value = data.get("zip")
-
+    wildcards = data.get("wildcards", [])
+    zip_value = data.get("zip", False)
 
     if not source:
         return jsonify({
             "success": False,
-            "error": "A source must be selected."
+            "error": "Please select a source."
         }), 400
-
 
     if not destination:
         return jsonify({
             "success": False,
-            "error": "A destination must be selected."
+            "error": "Please select a destination."
         }), 400
 
-
-    if not time:
+    if not time_period:
         return jsonify({
             "success": False,
-            "error": "A time period must be provided."
+            "error": "Please enter a time period."
         }), 400
 
-
     source_path = Path(source)
+    destination_path = Path(destination)
 
     if not source_path.exists():
         return jsonify({
             "success": False,
             "error": "The selected source does not exist."
         }), 400
-
-
-    destination_path = Path(destination)
 
     if not destination_path.exists():
         return jsonify({
@@ -256,66 +255,437 @@ def create_job():
             "error": "The destination must be a folder."
         }), 400
 
+    source_path = source_path.resolve()
+    destination_path = destination_path.resolve()
 
-    source_resolved = source_path.resolve()
-    destination_resolved = destination_path.resolve()
-
-    if source_resolved.is_dir():
+    if source_path.is_dir():
 
         if (
-            destination_resolved == source_resolved
-            or source_resolved in destination_resolved.parents
+            destination_path == source_path
+            or source_path in destination_path.parents
         ):
             return jsonify({
                 "success": False,
                 "error": "The destination cannot be inside the source."
             }), 400
 
-    import re
+    time_match = re.fullmatch(
+        r"(\d+(?:\.\d+)?)(mm|m|h|d)",
+        time_period
+    )
 
-    if not re.fullmatch(
-        r"\d+(mm|m|h|d)",
-        time
-    ):
+    if not time_match:
         return jsonify({
             "success": False,
             "error": "Invalid time period."
         }), 400
 
-    import fnmatch
+    time_value = float(time_match.group(1))
+    time_unit = time_match.group(2)
 
-    wildcard_list = []
+    if time_value <= 0:
+        return jsonify({
+            "success": False,
+            "error": "The time period must be greater than zero."
+        }), 400
 
-    if wildcards.strip():
+    if time_unit == "m":
+        duration = int(time_value)
 
-        wildcard_list = [
-            item.strip()
-            for item in wildcards.split(",")
-            if item.strip()
-        ]
+    elif time_unit == "h":
+        duration = int(time_value * 60)
 
-        for pattern in wildcard_list:
+    elif time_unit == "d":
+        duration = int(time_value * 1440)
 
-            if "/" in pattern or "\\" in pattern:
+    elif time_unit == "mm":
+        duration = int(time_value * 43200)
+
+    else:
+        return jsonify({
+            "success": False,
+            "error": "Invalid time unit."
+        }), 400
+
+    if duration <= 0:
+        return jsonify({
+            "success": False,
+            "error": "The resulting time period is invalid."
+        }), 400
+
+    if not isinstance(exceptions, list):
+        return jsonify({
+            "success": False,
+            "error": "Invalid exception data."
+        }), 400
+
+    if not isinstance(wildcards, list):
+        return jsonify({
+            "success": False,
+            "error": "Invalid wildcard data."
+        }), 400
+
+    relative_exceptions = []
+
+    if source_path.is_dir():
+
+        for exception in exceptions:
+
+            if not isinstance(exception, str):
                 return jsonify({
                     "success": False,
-                    "error":
-                        f"Invalid wildcard: {pattern}"
+                    "error": "Invalid exception path."
                 }), 400
+
+            exception_path = Path(exception)
+
+            if not exception_path.exists():
+                return jsonify({
+                    "success": False,
+                    "error": f"Exception does not exist: {exception}"
+                }), 400
+
+            exception_path = exception_path.resolve()
 
             try:
-                fnmatch.translate(pattern)
-            except Exception:
+                relative = exception_path.relative_to(source_path)
+
+            except ValueError:
                 return jsonify({
                     "success": False,
                     "error":
-                        f"Invalid wildcard: {pattern}"
+                        f"Exception is not inside the source: {exception}"
                 }), 400
 
+            if relative == Path("."):
+                return jsonify({
+                    "success": False,
+                    "error":
+                        "The source itself cannot be an exception."
+                }), 400
+
+            relative_exceptions.append(str(relative))
+
+    elif exceptions:
+        return jsonify({
+            "success": False,
+            "error":
+                "Exceptions cannot be used when the source is a file."
+        }), 400
+
+    for wildcard in wildcards:
+
+        if not isinstance(wildcard, str):
+            return jsonify({
+                "success": False,
+                "error": "Invalid wildcard."
+            }), 400
+
+        wildcard = wildcard.strip()
+
+        if not wildcard:
+            return jsonify({
+                "success": False,
+                "error": "Wildcard cannot be empty."
+            }), 400
+
+        try:
+            fnmatch.translate(wildcard)
+        except Exception:
+            return jsonify({
+                "success": False,
+                "error": f"Invalid wildcard: {wildcard}"
+            }), 400
+
+    zip_value = "Yes" if zip_value else "No"
+
+    if source_path.is_file():
+        zip_value = "No"
+
+    rowid = addtodb(
+        str(source_path),
+        str(destination_path),
+        time_period,
+        duration,
+        relative_exceptions,
+        wildcards,
+        zip_value
+    )
+
     return jsonify({
-        "success": True
+        "success": True,
+        "job_id": rowid
     })
 
+@app.route("/api/jobs/<int:job_id>", methods=["PUT"])
+def edit_job(job_id):
+
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "success": False,
+            "error": "Invalid job data."
+        }), 400
+
+    source = data.get("source", "")
+    destination = data.get("destination", "")
+    time_period = data.get("time", "")
+    exceptions = data.get("exceptions", [])
+    wildcards = data.get("wildcards", [])
+    zip_value = data.get("zip", False)
+
+    if not isinstance(source, str):
+        return jsonify({
+            "success": False,
+            "error": "Invalid source."
+        }), 400
+
+    if not isinstance(destination, str):
+        return jsonify({
+            "success": False,
+            "error": "Invalid destination."
+        }), 400
+
+    if not isinstance(time_period, str):
+        return jsonify({
+            "success": False,
+            "error": "Invalid time period."
+        }), 400
+
+    if not isinstance(exceptions, list):
+        return jsonify({
+            "success": False,
+            "error": "Invalid exception data."
+        }), 400
+
+    if not isinstance(wildcards, list):
+        return jsonify({
+            "success": False,
+            "error": "Invalid wildcard data."
+        }), 400
+
+    source = source.strip()
+    destination = destination.strip()
+    time_period = time_period.strip()
+
+    if not source:
+        return jsonify({
+            "success": False,
+            "error": "Please select a source."
+        }), 400
+
+    if not destination:
+        return jsonify({
+            "success": False,
+            "error": "Please select a destination."
+        }), 400
+
+    if not time_period:
+        return jsonify({
+            "success": False,
+            "error": "Please enter a time period."
+        }), 400
+
+    conn = sqlite3.connect(
+        hconfig("read", "DB")
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT job_id FROM jobs WHERE job_id = ?",
+        (job_id,)
+    )
+
+    if cursor.fetchone() is None:
+        conn.close()
+
+        return jsonify({
+            "success": False,
+            "error": "Job not found."
+        }), 404
+
+    conn.close()
+
+    source_path = Path(source)
+    destination_path = Path(destination)
+
+    if not source_path.exists():
+        return jsonify({
+            "success": False,
+            "error": "The selected source does not exist."
+        }), 400
+
+    if not destination_path.exists():
+        return jsonify({
+            "success": False,
+            "error": "The selected destination does not exist."
+        }), 400
+
+    if not destination_path.is_dir():
+        return jsonify({
+            "success": False,
+            "error": "The destination must be a folder."
+        }), 400
+
+    source_path = source_path.resolve()
+    destination_path = destination_path.resolve()
+
+    if source_path.is_dir():
+
+        if (
+            destination_path == source_path
+            or source_path in destination_path.parents
+        ):
+            return jsonify({
+                "success": False,
+                "error": "The destination cannot be inside the source."
+            }), 400
+
+    time_match = re.fullmatch(
+        r"(\d+(?:\.\d+)?)(mm|m|h|d)",
+        time_period
+    )
+
+    if not time_match:
+        return jsonify({
+            "success": False,
+            "error": "Invalid time period."
+        }), 400
+
+    time_value = float(time_match.group(1))
+    time_unit = time_match.group(2)
+
+    if time_value <= 0:
+        return jsonify({
+            "success": False,
+            "error": "The time period must be greater than zero."
+        }), 400
+
+    if time_unit == "m":
+        duration = int(time_value)
+
+    elif time_unit == "h":
+        duration = int(time_value * 60)
+
+    elif time_unit == "d":
+        duration = int(time_value * 1440)
+
+    elif time_unit == "mm":
+        duration = int(time_value * 43200)
+
+    else:
+        return jsonify({
+            "success": False,
+            "error": "Invalid time unit."
+        }), 400
+
+    if duration <= 0:
+        return jsonify({
+            "success": False,
+            "error": "The resulting time period is invalid."
+        }), 400
+
+    relative_exceptions = []
+
+    if source_path.is_dir():
+
+        for exception in exceptions:
+
+            if not isinstance(exception, str):
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid exception path."
+                }), 400
+
+            exception_path = Path(exception)
+
+            if not exception_path.exists():
+                return jsonify({
+                    "success": False,
+                    "error":
+                        f"Exception does not exist: {exception}"
+                }), 400
+
+            exception_path = exception_path.resolve()
+
+            try:
+                relative = exception_path.relative_to(
+                    source_path
+                )
+
+            except ValueError:
+                return jsonify({
+                    "success": False,
+                    "error":
+                        f"Exception is not inside the source: {exception}"
+                }), 400
+
+            if relative == Path("."):
+                return jsonify({
+                    "success": False,
+                    "error":
+                        "The source itself cannot be an exception."
+                }), 400
+
+            relative_exceptions.append(
+                str(relative)
+            )
+
+    elif exceptions:
+
+        return jsonify({
+            "success": False,
+            "error":
+                "Exceptions cannot be used when the source is a file."
+        }), 400
+
+    for wildcard in wildcards:
+
+        if not isinstance(wildcard, str):
+            return jsonify({
+                "success": False,
+                "error": "Invalid wildcard."
+            }), 400
+
+        wildcard = wildcard.strip()
+
+        if not wildcard:
+            return jsonify({
+                "success": False,
+                "error": "Wildcard cannot be empty."
+            }), 400
+
+        try:
+            fnmatch.translate(wildcard)
+        except Exception:
+            return jsonify({
+                "success": False,
+                "error":
+                    f"Invalid wildcard: {wildcard}"
+            }), 400
+
+    zip_value = "Yes" if zip_value else "No"
+
+    if source_path.is_file():
+        zip_value = "No"
+
+    editdb(
+        job_id,
+        str(source_path),
+        str(destination_path),
+        time_period,
+        duration,
+        relative_exceptions,
+        wildcards,
+        zip_value
+    )
+
+    return jsonify({
+        "success": True,
+        "job_id": job_id
+    })
 
 
 if __name__ == "__main__":

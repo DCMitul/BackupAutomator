@@ -651,6 +651,43 @@ body {
     cursor: pointer;
 }
 
+.create-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: block;
+}
+
+.create-action {
+    width: 100%;
+
+    border: none;
+    border-radius: 3vh;
+
+    padding: 2vh;
+
+    margin-top: 2vh;
+
+    font-size: 3vh;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    box-sizing: border-box;
+}
+
+.create-confirm {
+    background-color: #ffca05;
+    color: white;
+}
+
+.create-cancel {
+    background-color: #b3b3b3;
+    color: white;
+}
+
+
 .bottombar {
     position: relative;
     width: 100%;
