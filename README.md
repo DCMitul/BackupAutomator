@@ -15,7 +15,11 @@ When I started, I didn't want much of this: just a simple CLI which takes inputs
 But on the bright side, this did help me get familiar with both front and back end, so I'll take it as a win.
 
 ## Setting Up
-Nothing much here, jsut download the exe installer from the releases and run it, that should do everything.
+Nothing much here, just download the exe installer from the releases and run it, that should do everything.
+
+### Prerequisites
+- Python (without this nothing will work)
+- Flask, InquirerPy, tabulate. The program will close with a print statement asking for you to install these if they aren't present.
 
 ## Getting satrted with the program
 
@@ -28,10 +32,7 @@ PS: Keep in mind the GUI doesn't work unless you have finished the first set up 
 - ALwyas try to exit from the main menu instead of presing alt+F4.
 
 ### Using the GUI
-
-There are two ways to open the GUI-
-- One is to open it up from the launch program(there shoudl be a shortcut on either yoru desktop or start menu)
-- The other is to type backupautogui in the command prompt.
+- You just have to type backupautogui in the command prompt and a browser window should open with the GUI.
 
 ## Screenshots from the program
 
@@ -66,7 +67,6 @@ The Edit Job panel
 ![image](/gui/assets/edit.png)
 
 ## Problems?
-
 In case of any problems, raise an issue here or dm me on slack.
 
 ## License
