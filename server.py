@@ -1,7 +1,3 @@
-from flask import Flask
-from flask import send_from_directory
-from flask import jsonify
-from flask import request
 from pathlib import Path
 from getdata import getdef, changedef, hconfig, addtodb, editdb, taskschedule, setautorun
 import sqlite3
@@ -9,6 +5,20 @@ from tkinter import Tk
 from tkinter.filedialog import askdirectory, askopenfilename, askopenfilenames
 import re
 import fnmatch
+import sys
+import threading
+import webbrowser
+from werkzeug.serving import make_server
+
+
+try:
+    from flask import Flask
+    from flask import send_from_directory
+    from flask import jsonify
+    from flask import request
+except ImportError:
+    print("The library 'flask' is not present, install it using 'pip install Flask' to proceed.")
+    sys.exit()
 
 
 
@@ -772,4 +782,28 @@ def autorun_put():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000)
+
+    server = make_server(
+        "127.0.0.1",
+        0,
+        app
+    )
+
+    port = server.server_port
+
+    thread = threading.Thread(
+        target=server.serve_forever
+    )
+
+    thread.daemon = False
+    thread.start()
+
+    webbrowser.open(
+        f"http://127.0.0.1:{port}"
+    )
+
+    print(
+        f"Running on http://127.0.0.1:{port}"
+    )
+
+    thread.join()
